@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>All Objects in the Universe</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background: #faf8f5;
+    color: #222;
+    overflow: hidden;
+    height: 100vh;
+  }
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  header {
+    padding: 6px 20px;
+    background: #fff;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  header h1 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #333;
+  }
+  header .subtitle {
+    font-size: 11px;
+    color: #888;
+    margin-left: 10px;
+  }
+  .controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .controls label {
+    font-size: 11px;
+    color: #555;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .controls select, .controls button {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: #f0f0f0;
+    color: #333;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .controls button:hover { background: #ddd; }
+  #chart-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+  }
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: rgba(255,255,255,0.97);
+    border: 1px solid #c44;
+    border-radius: 5px;
+    padding: 10px 13px;
+    font-size: 12px;
+    line-height: 1.5;
+    max-width: 340px;
+    color: #222;
+    z-index: 100;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.2);
+  }
+  .tooltip .tt-title {
+    font-weight: 700;
+    color: #b33;
+    font-size: 13px;
+    margin-bottom: 3px;
+  }
+  .tooltip .tt-data { color: #666; font-size: 11px; }
+  .tooltip .tt-desc { margin-top: 4px; font-size: 11px; color: #444; }
+  .tooltip .tt-wiki-img {
+    border-radius: 3px;
+    display: block;
+    object-fit: cover;
+  }
+  .tooltip.tt-layout-top .tt-wiki-img {
+    width: 100%;
+    max-height: 140px;
+    margin-bottom: 6px;
+  }
+  .tooltip.tt-layout-side {
+    display: flex;
+    gap: 10px;
+    max-width: 400px;
+  }
+  .tooltip.tt-layout-side .tt-wiki-img {
+    width: 100px;
+    height: 130px;
+    flex-shrink: 0;
+    align-self: flex-start;
+  }
+  .tooltip.tt-layout-side .tt-content {
+    flex: 1;
+    min-width: 0;
+  }
+  .tooltip .tt-wiki-link {
+    margin-top: 4px;
+    font-size: 10px;
+    color: #3366cc;
+    font-style: italic;
+  }
+  .detail-panel {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255,255,255,0.98);
+    border: 2px solid #b33;
+    border-radius: 8px;
+    padding: 22px 26px;
+    max-width: 480px;
+    width: 90%;
+    z-index: 200;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.3);
+    display: none;
+  }
+  .detail-panel .close-btn {
+    position: absolute; top: 6px; right: 12px;
+    background: none; border: none; color: #b33; font-size: 22px; cursor: pointer;
+  }
+  .detail-panel h2 { color: #b33; font-size: 17px; margin-bottom: 6px; }
+  .detail-panel .detail-data { font-size: 12px; color: #666; margin-bottom: 8px; line-height: 1.6; }
+  .detail-panel .detail-text { font-size: 13px; line-height: 1.6; color: #333; }
+  .legend-box {
+    position: absolute;
+    bottom: 55px; right: 90px;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid #aaa;
+    border-radius: 5px;
+    padding: 8px 12px;
+    font-size: 10px;
+    z-index: 10;
+  }
+  .legend-box h3 { font-size: 11px; margin-bottom: 5px; color: #b33; font-weight: 700; }
+  .legend-item { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
+  .legend-swatch { width: 16px; height: 12px; border: 1px solid #999; }
+  .zoom-info {
+    position: absolute;
+    bottom: 8px; left: 80px;
+    font-size: 10px; color: #999; z-index: 10;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div style="display:flex;align-items:baseline;">
+      <h1>All Objects and Some Questions</h1>
+      <span class="subtitle">Lineweaver &amp; Patel, Am. J. Phys. 91, 819 (2023) &mdash; Interactive</span>
+    </div>
+    <div class="controls">
+      <label>X:
+        <select id="xScaleCtrl">
+          <option value="log" selected>Log</option>
+          <option value="linear">Linear</option>
+        </select>
+      </label>
+      <label>Y:
+        <select id="yScaleCtrl">
+          <option value="log" selected>Log</option>
+          <option value="linear">Linear</option>
+        </select>
+      </label>
+      <button id="resetZoom">Reset View</button>
+      <button id="toggleLabels">Labels On/Off</button>
+    </div>
+  </header>
+  <div id="chart-container">
+    <div class="tooltip" id="tooltip" style="opacity:0;"></div>
+    <div class="detail-panel" id="detailPanel">
+      <button class="close-btn" id="closeDetail">&times;</button>
+      <h2 id="detailTitle"></h2>
+      <div class="detail-data" id="detailData"></div>
+      <div class="detail-text" id="detailText"></div>
+    </div>
+    <div class="legend-box">
+      <h3>Domination</h3>
+      <div class="legend-item"><div class="legend-swatch" style="background:#bbb;"></div> &Omega;<sub>&Lambda;<sub>i</sub></sub> (inflation)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#d4a0a0;"></div> &Omega;<sub>r</sub> (radiation)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#a0b8d4;"></div> &Omega;<sub>m</sub> (matter)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#ccc;"></div> &Omega;<sub>&Lambda;</sub> (dark energy)</div>
+    </div>
+    <div class="zoom-info">Scroll to zoom &middot; Drag to pan &middot; Hover objects for info &middot; Click to open Wikipedia</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// PHYSICAL CONSTANTS (CGS)
+// ============================================================
+const G_N = 6.674e-8;
+const c_light = 2.998e10;
+const hbar_cgs = 1.055e-27;
+const kB_cgs = 1.381e-16;
+const M_sun = 1.989e33;
+const Mpc_cm = 3.086e24;
+const GeV_g = 1.783e-24;
+const eV_g = 1.783e-33;
+
+const m_planck = Math.sqrt(hbar_cgs * c_light / G_N);
+const l_planck = Math.sqrt(hbar_cgs * G_N / (c_light**3));
+
+const log10 = Math.log10;
+
+// Schwarzschild: r_s = 2Gm/c^2  =>  logR = logM + log(2G/c^2)
+const BH_const = log10(2 * G_N / (c_light * c_light)); // ~ -28.07
+
+// Compton: lambda_c = hbar/(mc) => logR = -logM + log(hbar/c)
+const C_const = log10(hbar_cgs / c_light); // ~ -37.52
+
+// ============================================================
+// OBJECT DATA
+// ============================================================
+function comptonR(m_g) { return log10(hbar_cgs / (m_g * c_light)); }
+function schwarzR(m_g) { return log10(2 * G_N * m_g / (c_light * c_light)); }
+
+const objects = [
+  // Fundamental particles (Compton line)
+  {name:"Neutrinos (\u03BD)", logR: comptonR(0.05 * eV_g), logM: log10(0.05 * eV_g), cat:"particle",
+   desc:"Neutrinos are nearly massless fundamental leptons interacting only via the weak force and gravity. Three flavors exist (electron, muon, tau). Their tiny mass (~0.05 eV) gives them an enormous Compton wavelength. Neutrinos decoupled from the photon plasma about 1 second after the Big Bang."},
+  {name:"Electron (e)", logR: comptonR(9.109e-28), logM: log10(9.109e-28), cat:"particle",
+   desc:"The electron (mass 0.511 MeV/c\u00B2) is the lightest charged particle and fundamental building block of all atoms. Electron degeneracy pressure supports white dwarf stars against gravitational collapse up to the Chandrasekhar limit of ~1.4 M\u2609."},
+  {name:"Proton (p)", logR: comptonR(1.673e-24), logM: log10(1.673e-24), cat:"particle",
+   desc:"The proton is a composite baryon (uud quarks) with mass 938 MeV/c\u00B2. Protons condensed from the quark-gluon plasma ~10\u207B\u2076 s after the Big Bang during the QCD phase transition. Protons are extraordinarily stable (lifetime > 10\u00B3\u2074 years) and constitute the nuclei of hydrogen atoms."},
+  {name:"Neutron (n)", logR: comptonR(1.675e-24), logM: log10(1.675e-24), cat:"particle",
+   desc:"The neutron (udd quarks) is slightly heavier than the proton. Free neutrons undergo beta decay with a half-life of ~10 minutes. Bound in nuclei, they are stable. Neutron degeneracy pressure supports neutron stars against gravitational collapse."},
+  {name:"W\u00B1", logR: comptonR(80.4 * GeV_g), logM: log10(80.4 * GeV_g), cat:"particle",
+   desc:"The W boson (80.4 GeV/c\u00B2) mediates the charged weak interaction. Discovered at CERN in 1983 by Carlo Rubbia and Simon van der Meer. It is responsible for beta decay and neutrino interactions."},
+  {name:"Higgs (H\u2070)", logR: comptonR(125 * GeV_g), logM: log10(125 * GeV_g), cat:"particle",
+   desc:"The Higgs boson (125 GeV/c\u00B2) is the quantum excitation of the Higgs field. It gives mass to fundamental particles via the Higgs mechanism. Discovered at CERN's LHC in 2012, confirming the Standard Model."},
+  {name:"Top quark (t)", logR: comptonR(173 * GeV_g), logM: log10(173 * GeV_g), cat:"particle",
+   desc:"The top quark is the heaviest known fundamental particle at 173 GeV/c\u00B2. It has the smallest Compton wavelength of any known particle and decays in ~5\u00D710\u207B\u00B2\u2075 s \u2014 before hadronization can occur."},
+
+  // Atoms
+  {name:"Atoms", logR: -8, logM: log10(1.67e-24 * 16), cat:"atomic",
+   desc:"Atoms have radii ~10\u207B\u2078 cm (~1 \u00C5ngstr\u00F6m). They consist of a nucleus (protons and neutrons) surrounded by electron clouds. Atoms first formed during recombination ~380,000 years after the Big Bang, when the Universe cooled enough for electrons to bind to nuclei. All chemistry and life is built from atoms."},
+
+  // Life / everyday
+  {name:"COVID virus", logR: log10(50e-7), logM: log10(1e-15), cat:"life",
+   desc:"SARS-CoV-2 is ~50\u2013100 nm in radius, with mass ~10\u207B\u00B9\u2075 g (~1 femtogram). Viruses lie at the boundary between chemistry and biology \u2014 molecular machines that hijack cellular machinery to replicate. They are among the simplest structures that carry genetic information."},
+  {name:"Bacterium", logR: log10(0.5e-4), logM: log10(1e-12), cat:"life",
+   desc:"Bacteria (~0.5\u20131 \u03BCm) are single-celled prokaryotes, among the first life forms on Earth (~3.5 Gyr ago). They outnumber human cells in the body and occupy nearly every ecological niche. Their density is close to water (~1 g/cm\u00B3)."},
+  {name:"Flea", logR: log10(0.15), logM: log10(5e-4), cat:"life",
+   desc:"A flea is ~1.5 mm, massing ~0.5 mg. Fleas can jump ~150\u00D7 their body length. Like all life forms, they lie near the atomic density isodensity line (\u03C1 \u2248 1 g/cm\u00B3)."},
+  {name:"Human", logR: log10(50), logM: log10(7e4), cat:"life",
+   desc:"Humans: ~50 cm effective radius (assuming sphericity), ~70 kg. Complex multicellular organisms made of ~37 trillion cells. Density ~1 g/cm\u00B3, placing us on the atomic isodensity line alongside all other life and water."},
+  {name:"Whale", logR: log10(700), logM: log10(1.5e8), cat:"life",
+   desc:"Blue whales are the largest animals ever to live, reaching ~30 m and ~150 tonnes. They too lie on the atomic density line. Their hearts alone weigh ~180 kg."},
+
+  // Solar system
+  {name:"Moons and dwarf planets", logR: log10(1.74e8), logM: log10(7.35e25), cat:"solar_system",
+   desc:"Earth's Moon: radius 1,740 km, mass 7.35\u00D710\u00B2\u2075 g. The Moon likely formed from a giant impact ~4.5 Gyr ago. Moons and dwarf planets span a wide range; Pluto (r = 1,188 km) and Ceres (r = 473 km) are dwarf planets."},
+  {name:"Earth", logR: log10(6.371e8), logM: log10(5.972e27), cat:"solar_system",
+   desc:"Earth: radius 6,371 km, mass 5.97\u00D710\u00B2\u2077 g (3\u00D710\u207B\u2076 M\u2609). The densest planet (5.5 g/cm\u00B3) due to its iron core. It sits slightly above the atomic density line. The only known planet with life, liquid water oceans, and plate tectonics."},
+  {name:"Planets", logR: log10(7.15e9), logM: log10(1.898e30), cat:"solar_system",
+   desc:"Jupiter: radius ~71,500 km, mass ~1.9\u00D710\u00B3\u2030 g (~318 Earth masses). Gas giants are mostly H and He. The planet\u2013brown dwarf boundary is ~13 Jupiter masses, where deuterium fusion begins."},
+
+  // Stars
+  {name:"Sun", logR: log10(6.96e10), logM: log10(M_sun), cat:"star",
+   desc:"Our Sun: radius 696,000 km, mass 2\u00D710\u00B3\u00B3 g (1 M\u2609). A G2V main sequence star, age ~4.6 Gyr. It converts ~600 million tonnes of hydrogen into helium per second via the pp chain. Surface temperature ~5,800 K."},
+  {name:"Brown dwarfs (BD)", logR: log10(5e9), logM: log10(0.05 * M_sun), cat:"star",
+   desc:"Brown dwarfs (13\u201380 M_Jup) are too low-mass for sustained hydrogen fusion. They briefly fuse deuterium and are supported by electron degeneracy pressure. They cool over time, bridging the gap between giant planets and stars."},
+  {name:"Main sequence stars", logR: log10(4e11), logM: log10(8 * M_sun), cat:"star",
+   desc:"Main sequence stars span ~0.08\u2013150 M\u2609. They burn hydrogen in their cores via the pp chain (low mass) or CNO cycle (high mass). The mass\u2013luminosity relation: L \u221D M\u00B3\u00B7\u2075. Their lifetimes range from ~10 Myr (massive) to trillions of years (red dwarfs)."},
+  {name:"Red giants", logR: log10(7e12), logM: log10(3 * M_sun), cat:"star",
+   desc:"Red giants are post-main-sequence stars that have exhausted core hydrogen. The core contracts while the envelope expands to ~100\u00D7 solar radius. The Sun will become a red giant in ~5 Gyr, eventually engulfing Mercury and Venus."},
+
+  // Compact objects
+  {name:"White dwarfs (WD)", logR: log10(6e8), logM: log10(0.7 * M_sun), cat:"compact",
+   desc:"White dwarfs: ~Earth-sized, ~0.5\u20131.4 M\u2609. Supported by electron degeneracy pressure. More massive WDs are SMALLER (r \u221D m\u207B\u00B9\u2033\u00B3). The Chandrasekhar limit (~1.4 M\u2609) is the maximum mass; above it, electron degeneracy fails and the star collapses into a neutron star."},
+  {name:"Neutron stars (NS)", logR: log10(1.2e6), logM: log10(1.5 * M_sun), cat:"compact",
+   desc:"Neutron stars: ~10\u201312 km radius, ~1.4\u20132.2 M\u2609. The densest directly observable objects (\u03C1 ~ 10\u00B9\u2074 g/cm\u00B3, nuclear density). Pulsars are rotating NSs. Above the Tolman\u2013Oppenheimer\u2013Volkoff limit (~2.2 M\u2609), they collapse into black holes."},
+
+  // Black holes (on the BH line: logR = logM + BH_const)
+  {name:"Instanton", logR: log10(l_planck), logM: log10(m_planck), cat:"planck",
+   desc:"The instanton is a Planck-mass black hole: the smallest possible object. It sits at the intersection of the Schwarzschild and Compton boundaries. Mass = m_P \u2248 2.18\u00D710\u207B\u2075 g, radius = l_P \u2248 1.62\u00D710\u207B\u00B3\u00B3 cm. Its Hawking temperature equals the Planck temperature (~1.42\u00D710\u00B3\u00B2 K). Instantons may represent the initial conditions of the Universe."},
+  {name:"Smallest observable PBH", logR: schwarzR(5e14), logM: log10(5e14), cat:"blackhole",
+   desc:"The smallest primordial black hole (PBH) that could survive to today has mass ~5\u00D710\u00B9\u2074 g, about the mass of a small asteroid. Its Schwarzschild radius is comparable to a proton's size (~10\u207B\u00B9\u00B3 cm). Lighter PBHs would have evaporated via Hawking radiation."},
+  {name:"3K BH", logR: schwarzR(4.5e22), logM: log10(4.5e22), cat:"blackhole",
+   desc:"A black hole whose Hawking temperature equals the CMB temperature (2.725 K). Mass ~4.5\u00D710\u00B2\u00B2 g (~Moon mass). Such a BH is in thermal equilibrium with the cosmic microwave background, absorbing and emitting at the same rate."},
+  {name:"Stellar mass BH", logR: schwarzR(10 * M_sun), logM: log10(10 * M_sun), cat:"blackhole",
+   desc:"Stellar-mass black holes (~3\u201350 M\u2609) form from the core collapse of massive stars (> ~25 M\u2609). The first gravitational wave detection (GW150914, 2015) came from two merging ~30 M\u2609 BHs. They are the most common astrophysical black holes."},
+  {name:"Sgr A*", logR: schwarzR(4e6 * M_sun), logM: log10(4e6 * M_sun), cat:"blackhole",
+   desc:"Sagittarius A*: the 4\u00D710\u2076 M\u2609 supermassive black hole at the center of our Milky Way. Schwarzschild radius ~12 million km (~0.08 AU). Stars orbit it at thousands of km/s; the closest (S2) reaches 3% the speed of light. Imaged by the EHT in 2022."},
+  {name:"Ton 618", logR: schwarzR(66e9 * M_sun), logM: log10(66e9 * M_sun), cat:"blackhole",
+   desc:"Ton 618: one of the most massive known black holes at ~66 billion M\u2609. Schwarzschild radius ~1,300 AU. It powers a quasar visible from 10.4 billion light-years. Its density is remarkably low: only ~0.002 g/cm\u00B3 (less than air)."},
+
+  // Galaxies & large scale
+  {name:"Globular clusters", logR: log10(3e19), logM: log10(2e5 * M_sun), cat:"galaxy",
+   desc:"Globular clusters: ~10\u2013100 ly across, 10\u2074\u201310\u2076 old stars. Among the oldest structures in galaxies (~12 Gyr). They orbit galactic centers in large halos and are nearly spherical due to their great age."},
+  {name:"Galaxies", logR: log10(3e22), logM: log10(1e11 * M_sun), cat:"galaxy",
+   desc:"Typical galaxies: ~30 kpc radius, ~10\u00B9\u00B9\u201310\u00B9\u00B2 M\u2609 (including dark matter halos). They contain stars, gas, dust, and are dominated by dark matter. Galaxies formed from primordial density fluctuations amplified by gravitational instability."},
+  {name:"Milky Way", logR: log10(5e22), logM: log10(1.5e12 * M_sun), cat:"galaxy",
+   desc:"Our galaxy: ~50 kpc total radius (including halo), ~1.5\u00D710\u00B9\u00B2 M\u2609 total (most is dark matter). Contains ~200\u2013400 billion stars, spiral arms, a central bar, and the 4\u00D710\u2076 M\u2609 SMBH Sgr A* at its center."},
+  {name:"Galaxy clusters", logR: log10(3e25), logM: log10(1e15 * M_sun), cat:"largescale",
+   desc:"Galaxy clusters are the largest gravitationally bound structures, ~2\u20135 Mpc across. They contain hundreds to thousands of galaxies, hot intracluster gas (10\u2077\u201310\u2078 K visible in X-rays), and vast dark matter halos. Total mass ~10\u00B9\u2074\u201310\u00B9\u2075 M\u2609."},
+  {name:"Superclusters", logR: log10(1e26), logM: log10(1e16 * M_sun), cat:"largescale",
+   desc:"Superclusters (~100\u2013300 Mpc) are the largest coherent structures. They are NOT gravitationally bound and are being torn apart by cosmic expansion. Laniakea, our home supercluster, contains ~100,000 galaxies."},
+  {name:"Voids", logR: log10(5e25), logM: log10(1e14 * M_sun), cat:"largescale",
+   desc:"Cosmic voids are vast underdense regions spanning 20\u2013300 Mpc. They contain very few galaxies and occupy most of the volume of the Universe. The cosmic web of filaments, walls, and clusters surrounds these voids."},
+
+  // Universe
+  {name:"Hubble radius", logR: log10(1.37e28), logM: log10(4/3 * Math.PI * (1.37e28)**3 * 9.47e-30), cat:"universe",
+   desc:"The Hubble radius r_H = c/H\u2080 \u2248 4.4 Gpc \u2248 1.37\u00D710\u00B2\u2078 cm. The mass within the Hubble volume at critical density is ~4\u00D710\u2075\u2075 g. This point lies ON the black hole line, seemingly suggesting the Universe is a black hole. However, this requires assuming our Universe is surrounded by zero-density Minkowski space. In reality, the Universe beyond r_H has the same density, and the Friedmann metric (not Schwarzschild) applies."},
+];
+
+// ============================================================
+// ISODENSITY LINES
+// ============================================================
+// rho = 3m/(4*pi*r^3) => logM = 3*logR + log(4*pi*rho/3)
+const isodensityLines = [
+  {label: "Planck 10\u2079\u00B3", logRho: 93},
+  {label: "GUT 10\u207B\u00B3\u00B2", logRho: 75},
+  {label: "EW 10\u207B\u00B9\u00B9", logRho: 25},
+  {label: "nuclear 10\u207B\u2076", logRho: 14.5, tag:"QGP"},
+  {label: "atomic 10\u00B3", logRho: 0, tag:"BBN"},
+  {label: "SMBH", logRho: -5},
+  {label: "now 10\u00B9\u2077\u00B7\u2075", logRho: -29.3, tag:"now"},
+];
+
+// ============================================================
+// WIKIPEDIA DATA (local images + article links)
+// layout: "top" = landscape/square image above text, "side" = portrait image beside text
+// ============================================================
+const wikiData = {
+  "Neutrinos (\u03BD)": { img: "wiki-images/neutrino.jpg", layout: "top", wiki: "Neutrino" },
+  "Electron (e)": { img: "wiki-images/electron.jpg", layout: "top", wiki: "Electron" },
+  "Proton (p)": { img: "wiki-images/proton.jpg", layout: "top", wiki: "Proton" },
+  "Neutron (n)": { img: "wiki-images/neutron.jpg", layout: "top", wiki: "Neutron" },
+  "W\u00B1": { img: "wiki-images/w_boson.jpg", layout: "top", wiki: "W_and_Z_bosons" },
+  "Higgs (H\u2070)": { img: "wiki-images/higgs.jpg", layout: "side", wiki: "Higgs_boson" },
+  "Top quark (t)": { img: "wiki-images/top_quark.jpg", layout: "top", wiki: "Top_quark" },
+  "Atoms": { img: "wiki-images/atom.jpg", layout: "top", wiki: "Atom" },
+  "COVID virus": { img: "wiki-images/covid.jpg", layout: "top", wiki: "Severe_acute_respiratory_syndrome_coronavirus_2" },
+  "Bacterium": { img: "wiki-images/bacteria.jpg", layout: "top", wiki: "Bacteria" },
+  "Flea": { img: "wiki-images/flea.jpg", layout: "side", wiki: "Flea" },
+  "Human": { img: "wiki-images/human.jpg", layout: "side", wiki: "Human" },
+  "Whale": { img: "wiki-images/whale.jpg", layout: "top", wiki: "Blue_whale" },
+  "Moons and dwarf planets": { img: "wiki-images/moon.jpg", layout: "top", wiki: "Moon" },
+  "Earth": { img: "wiki-images/earth.jpg", layout: "top", wiki: "Earth" },
+  "Planets": { img: "wiki-images/jupiter.jpg", layout: "top", wiki: "Jupiter" },
+  "Sun": { img: "wiki-images/sun.jpg", layout: "top", wiki: "Sun" },
+  "Brown dwarfs (BD)": { img: "wiki-images/brown_dwarf.jpg", layout: "top", wiki: "Brown_dwarf" },
+  "Main sequence stars": { img: "wiki-images/main_sequence.jpg", layout: "side", wiki: "Main_sequence" },
+  "Red giants": { img: "wiki-images/red_giant.jpg", layout: "side", wiki: "Red_giant" },
+  "White dwarfs (WD)": { img: "wiki-images/white_dwarf.jpg", layout: "side", wiki: "White_dwarf" },
+  "Neutron stars (NS)": { img: "wiki-images/neutron_star.jpg", layout: "top", wiki: "Neutron_star" },
+  "Instanton": { img: "wiki-images/planck.jpg", layout: "top", wiki: "Planck_units" },
+  "Smallest observable PBH": { img: "wiki-images/pbh.jpg", layout: "top", wiki: "Primordial_black_hole" },
+  "3K BH": { img: "wiki-images/hawking.jpg", layout: "top", wiki: "Hawking_radiation" },
+  "Stellar mass BH": { img: "wiki-images/stellar_bh.jpg", layout: "top", wiki: "Stellar_black_hole" },
+  "Sgr A*": { img: "wiki-images/sgr_a.jpg", layout: "top", wiki: "Sagittarius_A*" },
+  "Ton 618": { img: "wiki-images/ton_618.jpg", layout: "top", wiki: "Ton_618" },
+  "Globular clusters": { img: "wiki-images/globular_cluster.jpg", layout: "top", wiki: "Globular_cluster" },
+  "Galaxies": { img: "wiki-images/galaxy.jpg", layout: "top", wiki: "Galaxy" },
+  "Milky Way": { img: "wiki-images/milky_way.jpg", layout: "top", wiki: "Milky_Way" },
+  "Galaxy clusters": { img: "wiki-images/galaxy_cluster.jpg", layout: "top", wiki: "Galaxy_cluster" },
+  "Superclusters": { img: "wiki-images/supercluster.jpg", layout: "top", wiki: "Supercluster" },
+  "Voids": { img: "wiki-images/void.jpg", layout: "top", wiki: "Void_(astronomy)" },
+  "Hubble radius": { img: "wiki-images/observable_universe.jpg", layout: "top", wiki: "Observable_universe" },
+};
+
+// ============================================================
+// CHART DIMENSIONS
+// ============================================================
+const margin = {top: 48, right: 80, bottom: 52, left: 65};
+const container = document.getElementById('chart-container');
+let W, H, width, height;
+
+function getDims() {
+  W = container.clientWidth;
+  H = container.clientHeight;
+  width = W - margin.left - margin.right;
+  height = H - margin.top - margin.bottom;
+}
+getDims();
+
+const svg = d3.select('#chart-container').append('svg')
+  .attr('width', W).attr('height', H);
+
+const defs = svg.append('defs');
+defs.append('clipPath').attr('id','clip')
+  .append('rect').attr('width', width).attr('height', height);
+
+// Glow filter
+const glow = defs.append('filter').attr('id','glow');
+glow.append('feGaussianBlur').attr('stdDeviation','3').attr('result','blur');
+const fm = glow.append('feMerge');
+fm.append('feMergeNode').attr('in','blur');
+fm.append('feMergeNode').attr('in','SourceGraphic');
+
+const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+// Background
+g.append('rect').attr('width', width).attr('height', height).attr('fill','#faf5f0');
+
+const chartArea = g.append('g').attr('clip-path','url(#clip)');
+
+// ============================================================
+// SCALES
+// ============================================================
+const X_DOMAIN = [-42, 58];
+const Y_DOMAIN = [-58, 68];
+
+let showLabels = true;
+
+function makeX() { return d3.scaleLinear().domain(X_DOMAIN).range([0, width]); }
+function makeY() { return d3.scaleLinear().domain(Y_DOMAIN).range([height, 0]); }
+
+let baseX = makeX(), baseY = makeY();
+let curT = d3.zoomIdentity;
+
+// ============================================================
+// AXES
+// ============================================================
+const xAxisG = g.append('g').attr('transform', `translate(0,${height})`);
+const yAxisG = g.append('g');
+const xAxisTopG = g.append('g');
+const yAxisRightG = g.append('g').attr('transform', `translate(${width},0)`);
+
+function updateAxes(xS, yS) {
+  xAxisG.call(d3.axisBottom(xS).ticks(20).tickFormat(d => d));
+  yAxisG.call(d3.axisLeft(yS).ticks(20).tickFormat(d => d));
+  // Top: Mpc
+  const tS = xS.copy().domain(xS.domain().map(d => +(d - log10(Mpc_cm)).toFixed(1)));
+  xAxisTopG.call(d3.axisTop(tS).ticks(15).tickFormat(d => d % 5 === 0 ? d : ''));
+  // Right: M_sun
+  const rS = yS.copy().domain(yS.domain().map(d => +(d - log10(M_sun)).toFixed(1)));
+  yAxisRightG.call(d3.axisRight(rS).ticks(15).tickFormat(d => d % 5 === 0 ? d : ''));
+
+  g.selectAll('.tick text').attr('fill','#555').style('font-size','9px');
+  g.selectAll('.tick line').attr('stroke','#ccc');
+  g.selectAll('.domain').attr('stroke','#999');
+}
+
+// Axis labels
+g.append('text').attr('x', width/2).attr('y', height+42).attr('text-anchor','middle')
+  .attr('fill','#444').style('font-size','12px').text('log (physical radius) [cm]');
+g.append('text').attr('x', width/2).attr('y', -35).attr('text-anchor','middle')
+  .attr('fill','#444').style('font-size','12px').text('log (radius) [Mpc]');
+g.append('text').attr('transform','rotate(-90)').attr('x', -height/2).attr('y', -48)
+  .attr('text-anchor','middle').attr('fill','#444').style('font-size','12px')
+  .text('log (mass) [g]');
+g.append('text').attr('transform','rotate(90)').attr('x', height/2).attr('y', -width-55)
+  .attr('text-anchor','middle').attr('fill','#444').style('font-size','12px')
+  .text('log (mass) [M\u2609]');
+
+// ============================================================
+// CATEGORY COLORS
+// ============================================================
+const catCol = {
+  particle:'#3366cc', atomic:'#339966', life:'#228855',
+  solar_system:'#2288aa', star:'#cc8800', compact:'#cc5500',
+  blackhole:'#111', planck:'#cc9900',
+  galaxy:'#7744bb', largescale:'#5566cc', universe:'#cc2244',
+};
+
+// ============================================================
+// DRAW FUNCTIONS
+// ============================================================
+function drawAll(xS, yS) {
+  chartArea.selectAll('*').remove();
+  drawBackground(xS, yS);
+  drawForbidden(xS, yS);
+  drawIsodensity(xS, yS);
+  drawBoundaries(xS, yS);
+  drawSpecialAnnotations(xS, yS);
+  drawObjects(xS, yS);
+}
+
+function drawBackground(xS, yS) {
+  // Planckian unknown vertical band (logR < l_planck)
+  const plR = log10(l_planck);
+  chartArea.append('rect')
+    .attr('x', xS(X_DOMAIN[0])).attr('y', yS(Y_DOMAIN[1]))
+    .attr('width', Math.max(0, xS(plR) - xS(X_DOMAIN[0])))
+    .attr('height', yS(Y_DOMAIN[0]) - yS(Y_DOMAIN[1]))
+    .attr('fill', 'rgba(180,170,140,0.15)');
+
+  // Vertical isodensity bands map to domination epochs
+  // The chart shows background bands between isodensity lines as colored strips
+  // Radiation domination (pink): roughly from Planck to atomic density region
+  // Matter domination (blue): from atomic to near now
+  // Dark energy (grey): beyond now
+
+  // In the mass-radius plot, the isodensity lines are diagonal. The background bands
+  // between them show which density dominates. We approximate with vertical strips:
+  // The isodensity at density rho intersects the BH line where logM_BH = logR - BH_const
+  // and log(rho) = logM - 3*logR + log(3/(4pi)), so logR_intersect where the
+  // "universe density = rho" touches the average... This is complex.
+  // For visual fidelity, we'll color the bands between the isodensity lines directly.
+  // Between nuclear and atomic density: radiation domination (pink tint)
+  // Between atomic and now density: matter domination (blue tint)
+  // Beyond now: dark energy (grey tint)
+
+  // We do this by filling parallelogram strips between isodensity lines in the allowed region
+  // Simpler approach: very light vertical fills between key x positions
+
+  // Radiation-dominated background (pink tint in the middle region)
+  const radRegion = [
+    [xS(-20), yS(Y_DOMAIN[1])],
+    [xS(5), yS(Y_DOMAIN[1])],
+    [xS(5), yS(Y_DOMAIN[0])],
+    [xS(-20), yS(Y_DOMAIN[0])],
+  ];
+  chartArea.append('polygon')
+    .attr('points', radRegion.map(p => p.join(',')).join(' '))
+    .attr('fill', 'rgba(200,140,140,0.06)');
+
+  // Matter-dominated (blue tint)
+  const matRegion = [
+    [xS(5), yS(Y_DOMAIN[1])],
+    [xS(30), yS(Y_DOMAIN[1])],
+    [xS(30), yS(Y_DOMAIN[0])],
+    [xS(5), yS(Y_DOMAIN[0])],
+  ];
+  chartArea.append('polygon')
+    .attr('points', matRegion.map(p => p.join(',')).join(' '))
+    .attr('fill', 'rgba(140,160,200,0.06)');
+
+  // Dark energy (grey tint)
+  const deRegion = [
+    [xS(30), yS(Y_DOMAIN[1])],
+    [xS(X_DOMAIN[1]), yS(Y_DOMAIN[1])],
+    [xS(X_DOMAIN[1]), yS(Y_DOMAIN[0])],
+    [xS(30), yS(Y_DOMAIN[0])],
+  ];
+  chartArea.append('polygon')
+    .attr('points', deRegion.map(p => p.join(',')).join(' '))
+    .attr('fill', 'rgba(180,180,180,0.06)');
+}
+
+function drawForbidden(xS, yS) {
+  // BH line: logM = logR - BH_const
+  // Forbidden by gravity: ABOVE the BH line (objects can't be smaller than their Schwarzschild r)
+  const bhPts = [];
+  for (let lr = X_DOMAIN[0]; lr <= X_DOMAIN[1]; lr += 0.5)
+    bhPts.push([xS(lr), yS(lr - BH_const)]);
+
+  const gravPoly = [
+    ...bhPts,
+    [xS(X_DOMAIN[1]), yS(Y_DOMAIN[1])],
+    [xS(X_DOMAIN[0]), yS(Y_DOMAIN[1])],
+  ];
+  chartArea.append('polygon')
+    .attr('points', gravPoly.map(p => p.join(',')).join(' '))
+    .attr('fill', 'rgba(180,100,100,0.18)');
+
+  // Compton line: logM = -logR + C_const
+  // Forbidden by quantum uncertainty: BELOW the Compton line
+  const cPts = [];
+  for (let lr = X_DOMAIN[0]; lr <= X_DOMAIN[1]; lr += 0.5)
+    cPts.push([xS(lr), yS(-lr + C_const)]);
+
+  const qPoly = [
+    ...cPts,
+    [xS(X_DOMAIN[1]), yS(Y_DOMAIN[0])],
+    [xS(X_DOMAIN[0]), yS(Y_DOMAIN[0])],
+  ];
+  chartArea.append('polygon')
+    .attr('points', qPoly.map(p => p.join(',')).join(' '))
+    .attr('fill', 'rgba(160,120,100,0.15)');
+
+  // QG doubly-forbidden region (between BH and Compton lines, left of instanton)
+  const instLR = log10(l_planck);
+  const qgPts = [];
+  for (let lr = X_DOMAIN[0]; lr <= instLR; lr += 0.3)
+    qgPts.push([xS(lr), yS(lr - BH_const)]);
+  for (let lr = instLR; lr >= X_DOMAIN[0]; lr -= 0.3)
+    qgPts.push([xS(lr), yS(-lr + C_const)]);
+
+  if (qgPts.length > 2) {
+    chartArea.append('polygon')
+      .attr('points', qgPts.map(p => p.join(',')).join(' '))
+      .attr('fill', 'rgba(100,60,100,0.2)');
+  }
+
+  // Region labels
+  if (showLabels) {
+    const addLabel = (text, lx, ly, rot, fill, size) => {
+      chartArea.append('text')
+        .attr('x', xS(lx)).attr('y', yS(ly))
+        .attr('fill', fill).style('font-size', size+'px').style('font-weight','700')
+        .style('font-style','italic')
+        .attr('text-anchor','middle')
+        .attr('transform', `rotate(${rot}, ${xS(lx)}, ${yS(ly)})`)
+        .text(text);
+    };
+    addLabel('forbidden by gravity', -8, 45, -32, 'rgba(160,80,80,0.4)', 16);
+    addLabel('quantum uncertainty', 8, -38, 32, 'rgba(140,100,80,0.35)', 16);
+    addLabel('Compton limit', -8, -22, 40, 'rgba(140,100,80,0.4)', 11);
+    addLabel('sub \u2013 Planckian unknown', -37, 10, -90, 'rgba(150,140,100,0.4)', 12);
+    addLabel('QG', -36.5, -5, 0, 'rgba(140,80,160,0.5)', 11);
+    addLabel('black holes', -8, 18, -40, 'rgba(80,60,60,0.5)', 12);
+  }
+}
+
+function drawIsodensity(xS, yS) {
+  isodensityLines.forEach(iso => {
+    const intercept = Math.log10(4 * Math.PI / 3) + iso.logRho;
+    const pts = [];
+    for (let lr = X_DOMAIN[0]; lr <= X_DOMAIN[1]; lr += 1) {
+      const lm = 3 * lr + intercept;
+      if (lm >= Y_DOMAIN[0] && lm <= Y_DOMAIN[1])
+        pts.push([lr, lm]);
+    }
+    if (pts.length < 2) return;
+
+    const line = pts.map(p => [xS(p[0]), yS(p[1])]);
+    chartArea.append('polyline')
+      .attr('points', line.map(p => p.join(',')).join(' '))
+      .attr('fill','none').attr('stroke','rgba(255,255,255,0.6)')
+      .attr('stroke-width', 1).attr('stroke-dasharray','6,4');
+
+    if (showLabels) {
+      // Label near top of line
+      const lp = pts[pts.length - 1];
+      chartArea.append('text')
+        .attr('x', xS(lp[0]) - 2).attr('y', yS(lp[1]) + 3)
+        .attr('fill','rgba(100,90,80,0.6)').style('font-size','8px')
+        .attr('text-anchor','end')
+        .attr('transform', `rotate(-72, ${xS(lp[0])-2}, ${yS(lp[1])+3})`)
+        .text(iso.label);
+
+      // Tag (QGP, BBN, now) near the middle of the line
+      if (iso.tag) {
+        const mp = pts[Math.floor(pts.length * 0.4)];
+        chartArea.append('text')
+          .attr('x', xS(mp[0])).attr('y', yS(mp[1]) - 6)
+          .attr('fill','rgba(100,90,80,0.5)').style('font-size','8px').style('font-style','italic')
+          .attr('text-anchor','middle')
+          .attr('transform', `rotate(-72, ${xS(mp[0])}, ${yS(mp[1])-6})`)
+          .text(iso.tag);
+      }
+    }
+  });
+}
+
+function drawBoundaries(xS, yS) {
+  // Black hole line
+  const bhPts = [];
+  for (let lr = X_DOMAIN[0]; lr <= X_DOMAIN[1]; lr += 0.5) {
+    const lm = lr - BH_const;
+    if (lm >= Y_DOMAIN[0] && lm <= Y_DOMAIN[1])
+      bhPts.push([xS(lr), yS(lm)]);
+  }
+  chartArea.append('polyline')
+    .attr('points', bhPts.map(p => p.join(',')).join(' '))
+    .attr('fill','none').attr('stroke','#444').attr('stroke-width', 2);
+
+  // Compton line
+  const cPts = [];
+  for (let lr = X_DOMAIN[0]; lr <= X_DOMAIN[1]; lr += 0.5) {
+    const lm = -lr + C_const;
+    if (lm >= Y_DOMAIN[0] && lm <= Y_DOMAIN[1])
+      cPts.push([xS(lr), yS(lm)]);
+  }
+  chartArea.append('polyline')
+    .attr('points', cPts.map(p => p.join(',')).join(' '))
+    .attr('fill','none').attr('stroke','#666').attr('stroke-width', 2);
+
+  // Planck mass horizontal dashed
+  const pmLM = log10(m_planck);
+  chartArea.append('line')
+    .attr('x1', xS(X_DOMAIN[0])).attr('x2', xS(X_DOMAIN[1]))
+    .attr('y1', yS(pmLM)).attr('y2', yS(pmLM))
+    .attr('stroke','rgba(0,0,0,0.12)').attr('stroke-dasharray','4,4').attr('stroke-width',1);
+
+  // Planck length vertical dashed
+  const plLR = log10(l_planck);
+  chartArea.append('line')
+    .attr('x1', xS(plLR)).attr('x2', xS(plLR))
+    .attr('y1', yS(Y_DOMAIN[0])).attr('y2', yS(Y_DOMAIN[1]))
+    .attr('stroke','rgba(0,0,0,0.12)').attr('stroke-dasharray','4,4').attr('stroke-width',1);
+
+  if (showLabels) {
+    chartArea.append('text')
+      .attr('x', xS(X_DOMAIN[0]) + 4).attr('y', yS(pmLM) - 3)
+      .attr('fill','rgba(0,0,0,0.3)').style('font-size','9px').style('font-style','italic')
+      .text('m_P');
+    chartArea.append('text')
+      .attr('x', xS(plLR) + 3).attr('y', yS(Y_DOMAIN[0]) + 12)
+      .attr('fill','rgba(0,0,0,0.3)').style('font-size','9px').style('font-style','italic')
+      .text('l_P');
+  }
+}
+
+function drawSpecialAnnotations(xS, yS) {
+  if (!showLabels) return;
+
+  // Energy scale annotations on right margin (red text like the paper)
+  const energyLabels = [
+    {label:"E_P", logM_g: log10(m_planck * c_light * c_light / (1e9 * 1.602e-12)) + log10(1e9 * 1.602e-12 / (c_light*c_light)), y: log10(m_planck)},
+    {label:"E_GUT", y: log10(1e16 * GeV_g)},
+    {label:"E_EW", y: log10(100 * GeV_g)},
+    {label:"CMB", y: log10(2.35e-4 * eV_g)},
+  ];
+
+  energyLabels.forEach(e => {
+    const yy = yS(e.y);
+    if (yy > 0 && yy < height) {
+      chartArea.append('line')
+        .attr('x1', xS(X_DOMAIN[1]) - 30).attr('x2', xS(X_DOMAIN[1]))
+        .attr('y1', yy).attr('y2', yy)
+        .attr('stroke', '#c44').attr('stroke-width', 1).attr('stroke-dasharray', '2,2');
+      chartArea.append('text')
+        .attr('x', xS(X_DOMAIN[1]) - 2).attr('y', yy - 4)
+        .attr('fill', '#c44').style('font-size', '9px').style('font-weight','600')
+        .attr('text-anchor', 'end')
+        .text(e.label);
+    }
+  });
+
+  // NS/WD/BD rectangle (green dashed box like the paper's Fig 3 reference)
+  const rectX1 = log10(5e5), rectX2 = log10(2e12);
+  const rectY1 = log10(0.01 * M_sun), rectY2 = log10(5 * M_sun);
+  chartArea.append('rect')
+    .attr('x', xS(rectX1)).attr('y', yS(rectY2))
+    .attr('width', xS(rectX2) - xS(rectX1))
+    .attr('height', yS(rectY1) - yS(rectY2))
+    .attr('fill', 'none').attr('stroke', 'rgba(0,100,0,0.4)')
+    .attr('stroke-width', 1.5).attr('stroke-dasharray', '4,3');
+}
+
+function drawObjects(xS, yS) {
+  const tooltip = d3.select('#tooltip');
+
+  objects.forEach(obj => {
+    const cx = xS(obj.logR), cy = yS(obj.logM);
+    if (cx < -20 || cx > width + 20 || cy < -20 || cy > height + 20) return;
+
+    const col = catCol[obj.cat] || '#555';
+    const isBH = obj.cat === 'blackhole';
+    const isPlanck = obj.cat === 'planck';
+    const r = isPlanck ? 7 : (isBH ? 6 : 4.5);
+
+    const gr = chartArea.append('g').style('cursor','pointer');
+
+    gr.append('circle')
+      .attr('cx', cx).attr('cy', cy).attr('r', r)
+      .attr('fill', isBH ? '#111' : col)
+      .attr('stroke', isPlanck ? '#cc9900' : (isBH ? '#c44' : d3.color(col).darker(0.5)))
+      .attr('stroke-width', isPlanck ? 2.5 : 1.5)
+      .attr('opacity', 0.9);
+
+    if (showLabels) {
+      let dx = 9, dy = -5, anchor = 'start';
+      // Special positioning
+      if (obj.name.includes('Hubble')) { dx = -9; anchor = 'end'; }
+      if (obj.name.includes('Ton')) { dx = 9; dy = 12; }
+      if (obj.name.includes('Sgr')) { dx = -9; dy = -2; anchor = 'end'; }
+      if (obj.cat === 'particle') { dx = 6; dy = 10; }
+      if (obj.name.includes('Instanton')) { dx = -8; dy = 10; anchor = 'end'; }
+      if (obj.name.includes('3K')) { dx = -9; anchor = 'end'; }
+      if (obj.name.includes('Red giant')) { dx = 9; dy = 2; }
+
+      gr.append('text')
+        .attr('x', cx + dx).attr('y', cy + dy)
+        .attr('fill','#333').style('font-size','9px')
+        .attr('text-anchor', anchor)
+        .text(obj.name);
+    }
+
+    gr.on('mouseover', function(event) {
+      const mG = 10 ** obj.logM;
+      const rCm = 10 ** obj.logR;
+      const mSun = mG / M_sun;
+      let mStr = `10^${obj.logM.toFixed(1)} g`;
+      if (mSun > 0.001 && mSun < 1e20) mStr += ` \u2248 ${mSun.toExponential(1)} M\u2609`;
+      const rStr = `10^${obj.logR.toFixed(1)} cm`;
+      const rho = mG / ((4/3) * Math.PI * rCm**3);
+
+      const wd = wikiData[obj.name];
+      const textHtml = `
+        <div class="tt-title">${obj.name}</div>
+        <div class="tt-data">Mass: ${mStr}<br>Radius: ${rStr}<br>Density: ~10^${log10(rho).toFixed(0)} g/cm\u00B3</div>
+        <div class="tt-desc">${obj.desc.substring(0, 180)}${obj.desc.length > 180 ? '\u2026' : ''}</div>
+        ${wd ? '<div class="tt-wiki-link">Click to open Wikipedia \u2197</div>' : ''}
+      `;
+
+      const tooltipEl = tooltip.node();
+      tooltipEl.className = 'tooltip';
+
+      if (wd && wd.img) {
+        tooltipEl.classList.add(wd.layout === 'side' ? 'tt-layout-side' : 'tt-layout-top');
+        if (wd.layout === 'side') {
+          tooltip.html(`<img class="tt-wiki-img" src="${wd.img}" /><div class="tt-content">${textHtml}</div>`);
+        } else {
+          tooltip.html(`<img class="tt-wiki-img" src="${wd.img}" />${textHtml}`);
+        }
+      } else {
+        tooltip.html(textHtml);
+      }
+
+      tooltip.style('opacity', 1);
+      positionTooltip(event);
+      d3.select(this).select('circle').attr('r', r + 3).attr('stroke-width', 3).attr('filter','url(#glow)');
+    })
+    .on('mousemove', function(event) { positionTooltip(event); })
+    .on('mouseout', function() {
+      tooltip.style('opacity', 0);
+      tooltip.node().className = 'tooltip';
+      d3.select(this).select('circle').attr('r', r).attr('stroke-width', isPlanck ? 2.5 : 1.5).attr('filter', null);
+    })
+    .on('click', function() {
+      const wd = wikiData[obj.name];
+      if (wd) window.open(`https://en.wikipedia.org/wiki/${wd.wiki}`, '_blank');
+    });
+  });
+}
+
+function positionTooltip(event) {
+  const tooltip = document.getElementById('tooltip');
+  const rect = container.getBoundingClientRect();
+  let tx = event.clientX - rect.left + 16;
+  let ty = event.clientY - rect.top - 10;
+  if (tx + 340 > rect.width) tx -= 356;
+  if (ty + 160 > rect.height) ty -= 170;
+  if (tx < 0) tx = 10;
+  if (ty < 0) ty = 10;
+  tooltip.style.left = tx + 'px';
+  tooltip.style.top = ty + 'px';
+}
+
+// ============================================================
+// DETAIL PANEL
+// ============================================================
+function showDetail(obj) {
+  const panel = document.getElementById('detailPanel');
+  const mG = 10 ** obj.logM;
+  const rCm = 10 ** obj.logR;
+  const mSun = mG / M_sun;
+  const rho = mG / ((4/3) * Math.PI * rCm**3);
+  const rs = 2 * G_N * mG / (c_light * c_light);
+  const lc = hbar_cgs / (mG * c_light);
+
+  document.getElementById('detailTitle').textContent = obj.name;
+
+  let mStr = `10^${obj.logM.toFixed(2)} g`;
+  if (mSun > 0.001) mStr += ` = ${mSun.toExponential(2)} M\u2609`;
+
+  const logRs = log10(rs), logLc = log10(lc);
+
+  document.getElementById('detailData').innerHTML = `
+    <strong>Mass:</strong> ${mStr}<br>
+    <strong>Radius:</strong> 10<sup>${obj.logR.toFixed(2)}</sup> cm<br>
+    <strong>Density:</strong> 10<sup>${log10(rho).toFixed(1)}</sup> g/cm\u00B3<br>
+    <strong>Schwarzschild radius:</strong> 10<sup>${logRs.toFixed(1)}</sup> cm
+    ${Math.abs(logRs - obj.logR) < 0.5 ? '&larr; on BH line!' : ''}<br>
+    <strong>Compton wavelength:</strong> 10<sup>${logLc.toFixed(1)}</sup> cm
+    ${Math.abs(logLc - obj.logR) < 0.5 ? '&larr; on Compton line!' : ''}
+  `;
+  document.getElementById('detailText').textContent = obj.desc;
+  panel.style.display = 'block';
+}
+
+document.getElementById('closeDetail').onclick = () => {
+  document.getElementById('detailPanel').style.display = 'none';
+};
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('detailPanel').style.display = 'none';
+});
+
+// ============================================================
+// ZOOM & PAN
+// ============================================================
+const zoom = d3.zoom()
+  .scaleExtent([0.3, 80])
+  .on('zoom', function(event) {
+    curT = event.transform;
+    const nx = curT.rescaleX(makeX());
+    const ny = curT.rescaleY(makeY());
+    updateAxes(nx, ny);
+    drawAll(nx, ny);
+  });
+
+svg.call(zoom);
+
+document.getElementById('resetZoom').onclick = () => {
+  svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity);
+};
+
+// ============================================================
+// SCALE TYPE TOGGLE
+// ============================================================
+// When switching to "linear" we change the axis tick labeling to show 10^x
+// The data positions stay the same (log-space coordinates) but labels show actual values
+document.getElementById('xScaleCtrl').onchange = function() {
+  const nx = curT.rescaleX(makeX());
+  const ny = curT.rescaleY(makeY());
+  if (this.value === 'linear') {
+    // Show actual values on ticks (10^x format) and adjust tick count
+    xAxisG.call(d3.axisBottom(nx).ticks(10).tickFormat(d => {
+      if (d % 10 === 0) return `10^${d}`;
+      return '';
+    }));
+  } else {
+    updateAxes(nx, ny);
+  }
+};
+
+document.getElementById('yScaleCtrl').onchange = function() {
+  const nx = curT.rescaleX(makeX());
+  const ny = curT.rescaleY(makeY());
+  if (this.value === 'linear') {
+    yAxisG.call(d3.axisLeft(ny).ticks(10).tickFormat(d => {
+      if (d % 10 === 0) return `10^${d}`;
+      return '';
+    }));
+  } else {
+    updateAxes(nx, ny);
+  }
+  g.selectAll('.tick text').attr('fill','#555').style('font-size','9px');
+};
+
+// ============================================================
+// TOGGLE LABELS
+// ============================================================
+document.getElementById('toggleLabels').onclick = () => {
+  showLabels = !showLabels;
+  const nx = curT.rescaleX(makeX());
+  const ny = curT.rescaleY(makeY());
+  drawAll(nx, ny);
+};
+
+// ============================================================
+// RESIZE
+// ============================================================
+window.addEventListener('resize', () => {
+  getDims();
+  svg.attr('width', W).attr('height', H);
+  d3.select('#clip rect').attr('width', width).attr('height', height);
+  g.select('rect').attr('width', width).attr('height', height);
+  xAxisG.attr('transform', `translate(0,${height})`);
+  yAxisRightG.attr('transform', `translate(${width},0)`);
+  baseX = makeX(); baseY = makeY();
+  const nx = curT.rescaleX(baseX);
+  const ny = curT.rescaleY(baseY);
+  updateAxes(nx, ny);
+  drawAll(nx, ny);
+});
+
+// ============================================================
+// INIT
+// ============================================================
+updateAxes(baseX, baseY);
+drawAll(baseX, baseY);
+</script>
+</body>
+</html>
