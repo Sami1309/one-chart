@@ -103,11 +103,11 @@
   .tooltip.tt-layout-side {
     display: flex;
     gap: 10px;
-    max-width: 400px;
+    max-width: 440px;
   }
   .tooltip.tt-layout-side .tt-wiki-img {
-    width: 100px;
-    height: 130px;
+    width: 140px;
+    height: 180px;
     flex-shrink: 0;
     align-self: flex-start;
   }
@@ -330,13 +330,27 @@ const objects = [
 // ============================================================
 // rho = 3m/(4*pi*r^3) => logM = 3*logR + log(4*pi*rho/3)
 const isodensityLines = [
-  {label: "Planck 10\u2079\u00B3", logRho: 93},
-  {label: "GUT 10\u207B\u00B3\u00B2", logRho: 75},
-  {label: "EW 10\u207B\u00B9\u00B9", logRho: 25},
-  {label: "nuclear 10\u207B\u2076", logRho: 14.5, tag:"QGP"},
-  {label: "atomic 10\u00B3", logRho: 0, tag:"BBN"},
-  {label: "SMBH", logRho: -5},
-  {label: "now 10\u00B9\u2077\u00B7\u2075", logRho: -29.3, tag:"now"},
+  {label: "Planck 10\u2079\u00B3", logRho: 93,
+   desc: "The Planck epoch (t < 10\u207B\u2074\u00B3 s). All four fundamental forces are thought to be unified. Quantum gravity dominates at density ~10\u2079\u00B3 g/cm\u00B3. No complete physical theory yet describes this regime.",
+   wiki: "Planck_epoch"},
+  {label: "GUT 10\u207B\u00B3\u00B2", logRho: 75,
+   desc: "Grand Unification epoch (t ~ 10\u207B\u00B3\u2076 s). The strong force separates from the electroweak force as the Universe cools through ~10\u00B9\u2076 GeV. This symmetry breaking may have triggered cosmic inflation.",
+   wiki: "Grand_unification_epoch"},
+  {label: "EW 10\u207B\u00B9\u00B9", logRho: 25,
+   desc: "Electroweak epoch (t ~ 10\u207B\u00B9\u00B2 s). The Higgs field acquires its vacuum expectation value, giving mass to W and Z bosons and separating electromagnetism from the weak force.",
+   wiki: "Electroweak_epoch"},
+  {label: "nuclear 10\u207B\u2076", logRho: 14.5, tag:"QGP",
+   desc: "QCD phase transition (t ~ 10\u207B\u2076 s). Quarks become confined into hadrons (protons, neutrons) as the Universe cools below ~150 MeV. This is nuclear density (~10\u00B9\u2074 g/cm\u00B3) \u2014 the density inside atomic nuclei and neutron stars.",
+   wiki: "Quark%E2%80%93gluon_plasma"},
+  {label: "atomic 10\u00B3", logRho: 0, tag:"BBN",
+   desc: "Big Bang nucleosynthesis (t ~ 3 min). Protons and neutrons fuse into light nuclei (\u00B2H, \u00B3He, \u2074He, \u2077Li). Atomic density (~1 g/cm\u00B3) characterizes ordinary condensed matter \u2014 water, rock, planets, and all living things.",
+   wiki: "Big_Bang_nucleosynthesis"},
+  {label: "SMBH", logRho: -5,
+   desc: "Average density of supermassive black holes (~10\u207B\u2075 g/cm\u00B3). Paradoxically, the most massive black holes have very low average densities \u2014 Ton 618 at 66 billion M\u2609 has average density less than air.",
+   wiki: "Supermassive_black_hole"},
+  {label: "now 10\u00B9\u2077\u00B7\u2075", logRho: -29.3, tag:"now",
+   desc: "The current critical density of the Universe (~9.5 \u00D7 10\u207B\u00B3\u2070 g/cm\u00B3). This is the density required for spatial flatness, as observed by CMB measurements. It corresponds to roughly 5 hydrogen atoms per cubic meter.",
+   wiki: "Friedmann_equations"},
 ];
 
 // ============================================================
@@ -636,22 +650,26 @@ function drawIsodensity(xS, yS) {
     if (showLabels) {
       // Label near top of line
       const lp = pts[pts.length - 1];
-      chartArea.append('text')
+      const labelText = chartArea.append('text')
         .attr('x', xS(lp[0]) - 2).attr('y', yS(lp[1]) + 3)
         .attr('fill','rgba(100,90,80,0.6)').style('font-size','8px')
         .attr('text-anchor','end')
         .attr('transform', `rotate(-72, ${xS(lp[0])-2}, ${yS(lp[1])+3})`)
         .text(iso.label);
 
+      if (iso.desc) addEraTooltip(labelText, iso.label, iso.desc, iso.wiki);
+
       // Tag (QGP, BBN, now) near the middle of the line
       if (iso.tag) {
         const mp = pts[Math.floor(pts.length * 0.4)];
-        chartArea.append('text')
+        const tagText = chartArea.append('text')
           .attr('x', xS(mp[0])).attr('y', yS(mp[1]) - 6)
           .attr('fill','rgba(100,90,80,0.5)').style('font-size','8px').style('font-style','italic')
           .attr('text-anchor','middle')
           .attr('transform', `rotate(-72, ${xS(mp[0])}, ${yS(mp[1])-6})`)
           .text(iso.tag);
+
+        if (iso.desc) addEraTooltip(tagText, iso.label, iso.desc, iso.wiki);
       }
     }
   });
@@ -711,10 +729,18 @@ function drawSpecialAnnotations(xS, yS) {
 
   // Energy scale annotations on right margin (red text like the paper)
   const energyLabels = [
-    {label:"E_P", logM_g: log10(m_planck * c_light * c_light / (1e9 * 1.602e-12)) + log10(1e9 * 1.602e-12 / (c_light*c_light)), y: log10(m_planck)},
-    {label:"E_GUT", y: log10(1e16 * GeV_g)},
-    {label:"E_EW", y: log10(100 * GeV_g)},
-    {label:"CMB", y: log10(2.35e-4 * eV_g)},
+    {label:"E_P", y: log10(m_planck),
+     desc:"Planck energy (~1.22 \u00D7 10\u00B9\u2079 GeV). The energy scale where quantum gravitational effects become important, corresponding to the Planck mass via E = mc\u00B2.",
+     wiki:"Planck_energy"},
+    {label:"E_GUT", y: log10(1e16 * GeV_g),
+     desc:"Grand Unification energy (~10\u00B9\u2076 GeV). The energy at which the strong and electroweak forces are predicted to unify. Proton decay, if observed, would confirm GUT theories.",
+     wiki:"Grand_Unified_Theory"},
+    {label:"E_EW", y: log10(100 * GeV_g),
+     desc:"Electroweak scale (~100 GeV). The energy at which the Higgs mechanism gives mass to W and Z bosons, separating electromagnetism from the weak force. Directly probed at the LHC.",
+     wiki:"Electroweak_interaction"},
+    {label:"CMB", y: log10(2.35e-4 * eV_g),
+     desc:"Cosmic Microwave Background (~2.725 K, ~2.35 \u00D7 10\u207B\u2074 eV). Relic thermal radiation from recombination ~380,000 years after the Big Bang \u2014 the oldest light in the Universe.",
+     wiki:"Cosmic_microwave_background"},
   ];
 
   energyLabels.forEach(e => {
@@ -724,11 +750,12 @@ function drawSpecialAnnotations(xS, yS) {
         .attr('x1', xS(X_DOMAIN[1]) - 30).attr('x2', xS(X_DOMAIN[1]))
         .attr('y1', yy).attr('y2', yy)
         .attr('stroke', '#c44').attr('stroke-width', 1).attr('stroke-dasharray', '2,2');
-      chartArea.append('text')
+      const labelText = chartArea.append('text')
         .attr('x', xS(X_DOMAIN[1]) - 2).attr('y', yy - 4)
         .attr('fill', '#c44').style('font-size', '9px').style('font-weight','600')
         .attr('text-anchor', 'end')
         .text(e.label);
+      addEraTooltip(labelText, e.label, e.desc, e.wiki);
     }
   });
 
@@ -841,6 +868,26 @@ function positionTooltip(event) {
   if (ty < 0) ty = 10;
   tooltip.style.left = tx + 'px';
   tooltip.style.top = ty + 'px';
+}
+
+function addEraTooltip(el, title, desc, wiki) {
+  const tooltip = d3.select('#tooltip');
+  el.style('cursor', 'pointer')
+    .on('mouseover', function(event) {
+      const tooltipEl = tooltip.node();
+      tooltipEl.className = 'tooltip';
+      tooltip.html(`
+        <div class="tt-title">${title}</div>
+        <div class="tt-desc">${desc}</div>
+        ${wiki ? '<div class="tt-wiki-link">Click to open Wikipedia \u2197</div>' : ''}
+      `).style('opacity', 1);
+      positionTooltip(event);
+    })
+    .on('mousemove', function(event) { positionTooltip(event); })
+    .on('mouseout', function() { tooltip.style('opacity', 0); })
+    .on('click', function() {
+      if (wiki) window.open(`https://en.wikipedia.org/wiki/${wiki}`, '_blank');
+    });
 }
 
 // ============================================================
