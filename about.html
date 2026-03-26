@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About — All Objects in the Universe</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          cream: '#faf8f5',
+          accent: '#b33',
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-cream text-gray-900 font-['Helvetica_Neue',Arial,sans-serif] min-h-screen">
+<div class="flex flex-col min-h-screen">
+
+  <!-- Navigation -->
+  <nav class="px-5 py-1.5 bg-white border-b border-gray-300 flex items-center justify-between flex-shrink-0 z-20">
+    <div class="flex items-baseline gap-3">
+      <a href="index.html" class="text-[15px] font-bold text-gray-700 hover:text-accent transition-colors">All Objects and Some Questions</a>
+      <span class="text-[11px] text-gray-400">Lineweaver &amp; Patel, Am. J. Phys. 91, 819 (2023)</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <a href="index.html" class="text-[11px] text-gray-500 hover:text-accent transition-colors">Chart</a>
+      <a href="about.html" class="text-[11px] text-accent font-semibold">About</a>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <main class="flex-1 max-w-2xl mx-auto px-6 py-16">
+
+    <!-- Hero -->
+    <h1 class="text-3xl font-light text-gray-800 mb-3 tracking-tight">Every known object in the Universe,<br>on a single chart.</h1>
+    <p class="text-gray-500 text-sm mb-16 leading-relaxed max-w-lg">From the Planck-mass instanton at 10<sup>&minus;33</sup> cm to the Hubble radius at 10<sup>28</sup> cm &mdash; spanning over 60 orders of magnitude in size and 120 in mass.</p>
+
+    <!-- The Paper -->
+    <section class="mb-14">
+      <h2 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">The Paper</h2>
+      <p class="text-sm text-gray-700 leading-relaxed mb-3">
+        This visualization is based on <em>&ldquo;All Objects and Some Questions&rdquo;</em> by Charles H. Lineweaver and Vihan M. Patel, published in the <em>American Journal of Physics</em> <strong>91</strong>, 819&ndash;825 (2023).
+      </p>
+      <p class="text-sm text-gray-700 leading-relaxed mb-4">
+        The paper plots every known object in the Universe on a single log-log chart of mass vs. physical radius. Two fundamental boundaries carve out forbidden regions: general relativity forbids objects smaller than their Schwarzschild radius (the black hole line), and quantum mechanics forbids localizing a particle below its Compton wavelength. These boundaries intersect at exactly one point &mdash; the Planck-mass instanton, the smallest possible object and a candidate for the initial conditions of the Universe.
+      </p>
+      <a href="https://doi.org/10.1119/5.0150209" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 transition-colors">
+        DOI: 10.1119/5.0150209 &nearr;
+      </a>
+      <span class="text-xs text-gray-400 ml-3">Licensed CC BY 4.0</span>
+    </section>
+
+    <!-- Key Physics -->
+    <section class="mb-14">
+      <h2 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Key Physics</h2>
+      <div class="space-y-4 text-sm text-gray-700 leading-relaxed">
+        <div>
+          <h3 class="font-semibold text-gray-800 mb-1">The Schwarzschild boundary</h3>
+          <p>r<sub>s</sub> = 2Gm/c&sup2;. No object can be compressed below its Schwarzschild radius without becoming a black hole. All black holes lie on this diagonal line (slope +1 in log-log space). The region above it is forbidden by gravity.</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-800 mb-1">The Compton boundary</h3>
+          <p>&lambda;<sub>c</sub> = &hbar;/mc. Below this line, quantum uncertainty prevents localization &mdash; pair production creates new particles rather than allowing further confinement. Fundamental particles lie on this line.</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-800 mb-1">The Instanton</h3>
+          <p>At the intersection of both boundaries sits the Planck-mass instanton: a black hole whose Compton wavelength equals its Schwarzschild radius. It has Planck mass (~2.18 &times; 10<sup>&minus;5</sup> g) and Planck length (~1.62 &times; 10<sup>&minus;33</sup> cm). It is the smallest possible object.</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-800 mb-1">Isodensity lines</h3>
+          <p>Diagonal lines of slope 3 connect objects of equal density. Life, planets, and stars cluster near atomic density (~1 g/cm&sup3;). Neutron stars sit on nuclear density (~10<sup>14</sup> g/cm&sup3;). The current Universe has critical density ~10<sup>&minus;29</sup> g/cm&sup3;.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Creator -->
+    <section class="mb-14">
+      <h2 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">The Creator</h2>
+      <p class="text-sm text-gray-700 leading-relaxed mb-3">
+        Built as an interactive exploration tool to make the extraordinary range of scales in our Universe tangible and navigable. The original paper condenses an astonishing breadth of physics into a single figure &mdash; this app aims to let you explore it.
+      </p>
+    </section>
+
+    <!-- Technical -->
+    <section class="mb-14">
+      <h2 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Technical</h2>
+      <p class="text-sm text-gray-500 leading-relaxed">
+        Built with D3.js and Tailwind CSS. No frameworks, no build step. All physics constants and object data are embedded directly. Wikipedia images are stored locally for instant loading.
+      </p>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-gray-200 px-6 py-4 text-center">
+    <p class="text-xs text-gray-400">Based on Lineweaver &amp; Patel (2023). Licensed CC BY 4.0.</p>
+  </footer>
+</div>
+</body>
+</html>

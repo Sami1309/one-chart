@@ -1,3 +1,12 @@
+# Summary
+
+Your goal is to design a high-quality web page based on the graphic.jpeg file in this repo, which is derived from This app is based on **"All Objects and Some Questions"** by Charles H. Lineweaver and Vihan M. Patel, published in *American Journal of Physics* 91, 819–825 (2023). Licensed CC BY 4.0.
+
+# Guidelines
+
+Optimize for ease of use, visual quality, and user experience. Use the chrome devtools MCP to validate your changes
+
+
 # All Objects in the Universe — Interactive Visualization
 
 ## Paper Summary
@@ -58,11 +67,27 @@ These two boundaries are **orthogonal** in log-log space and intersect at a sing
 
 ## Tech Stack
 
-- Single `index.html` file, no build step
 - **D3.js v7** (loaded from CDN) for SVG rendering, axes, zoom/pan behavior
-- Vanilla JS, no framework
-- All physics constants and object data are embedded in the script
+- **Tailwind CSS** (loaded from CDN) for layout and styling
+- Vanilla JS, no framework, no build step
 - Responsive layout (resizes with window)
+
+## File Structure
+
+```
+graph/
+├── index.html              ← Main chart page (HTML shell + Tailwind layout)
+├── about.html              ← About page (paper summary, physics, creator)
+├── js/
+│   ├── constants.js        ← Physics constants, object data, wikiData, colors
+│   ├── tooltips.js         ← Tooltip positioning, era tooltips, detail panel
+│   └── chart.js            ← App state, D3 chart init, draw pipeline, zoom/pan, controls
+├── wiki-images/            ← 35 locally-cached Wikipedia thumbnails
+├── CLAUDE.md               ← This file
+└── IDEAS.md                ← Future feature ideas
+```
+
+Scripts are loaded in order via `<script>` tags: `constants.js` → `tooltips.js` → `chart.js`. All shared state lives on the global `App` object in `chart.js`. See `js/CLAUDE.md` and `wiki-images/CLAUDE.md` for subdirectory details.
 
 ## Key Constants (CGS)
 
