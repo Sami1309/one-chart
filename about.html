@@ -17,6 +17,23 @@
     }
   }
 </script>
+<style>
+  .fn-ref {
+    color: #5a7aaa;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .fn-ref:hover { color: #7799cc; }
+  .fn-note {
+    transition: background 0.2s ease, border-color 0.2s ease;
+    border-left: 2px solid transparent;
+    padding-left: 8px;
+  }
+  .fn-note.fn-highlight {
+    background: rgba(90,120,170,0.12);
+    border-left-color: #5a7aaa;
+  }
+</style>
 </head>
 <body class="font-['Helvetica_Neue',Arial,sans-serif] min-h-screen" style="background: #080c18; color: #c8d0e0;">
 <div class="flex flex-col min-h-screen">
@@ -38,46 +55,30 @@
 
     <!-- Hero -->
     <h1 class="text-3xl font-light mb-3 tracking-tight" style="color: #d0d8e8;">Every known object in the Universe,<br>on a single chart.</h1>
-    <p class="text-sm mb-16 leading-relaxed max-w-lg" style="color: #5a6a90;">From the Planck-mass instanton at 10<sup>-33</sup> cm to the Hubble radius at 10<sup>28</sup> cm, spanning over 60 orders of magnitude in size and 120 in mass.</p>
+    <p class="text-sm mb-16 leading-relaxed max-w-lg" style="color: #5a6a90;">From the Planck-mass instanton at 10<sup>&minus;33</sup> cm to the Hubble radius at 10<sup>28</sup> cm &mdash; spanning over 60 orders of magnitude in size and 90 in mass.</p>
 
     <!-- The Paper -->
     <section class="mb-14">
       <h2 class="text-xs font-bold uppercase tracking-widest mb-4" style="color: #4a5a80;">The Paper</h2>
       <p class="text-sm leading-relaxed mb-3" style="color: #8899aa;">
-        This visualization is based on <em>"All Objects and Some Questions"</em> by Charles H. Lineweaver and Vihan M. Patel, published in the <em>American Journal of Physics</em> <strong style="color: #a0b4cc;">91</strong>, 819&ndash;825 (2023). The paper charts every known object in the universe by their mass and size.
+        This visualization is based on <em>&ldquo;All Objects and Some Questions&rdquo;</em> by Charles H. Lineweaver and Vihan M. Patel, published in the <em>American Journal of Physics</em> <strong style="color: #a0b4cc;">91</strong>, 819&ndash;825 (2023). The paper places every known object in the universe on a single log-log chart of mass versus physical radius.
       </p>
       <p class="text-sm leading-relaxed mb-3" style="color: #8899aa;">
-        Two fundamental boundaries carve out forbidden regions: general relativity, which forbids objects smaller than their Schwarzschild radius<sup style="color: #5a7aaa;">1</sup> (the black hole line), and quantum mechanics, which forbids localizing a particle below its Compton wavelength<sup style="color: #5a7aaa;">2</sup>. These boundaries intersect at exactly one point: the Planck-mass instanton<sup style="color: #5a7aaa;">3</sup>, the smallest possible object and a candidate for the initial conditions of the Universe.
+        Two fundamental boundaries carve out forbidden regions: general relativity forbids objects smaller than their Schwarzschild radius<sup class="fn-ref" data-fn="1">1</sup> (the black hole line), and quantum mechanics forbids localizing a particle below its Compton wavelength<sup class="fn-ref" data-fn="2">2</sup>. These boundaries intersect at exactly one point: the Planck-mass instanton<sup class="fn-ref" data-fn="3">3</sup>, the smallest possible object and a candidate for the initial conditions of the Universe.
       </p>
       <p class="text-sm leading-relaxed mb-4" style="color: #8899aa;">
-        This chart covers all currently known physics as it relates to our understanding of the universe. Current physical understanding cannot cover the forbidden realms partially because they are impossible to measure, by definition.
+        Together, these boundaries and the objects between them cover the full range of currently known physics. The forbidden regions are, by definition, inaccessible to measurement &mdash; understanding them will require new physics beyond the Standard Model and general relativity.
       </p>
       <a href="https://doi.org/10.1119/5.0150209" target="_blank" class="text-xs transition-colors" style="color: #5a7aaa; text-decoration: underline;">
         DOI: 10.1119/5.0150209 &nearr;
       </a>
       <span class="text-xs ml-3" style="color: #3a4a6a;">Licensed CC BY 4.0</span>
-    </section>
 
-    <!-- Key Physics -->
-    <section class="mb-14">
-      <h2 class="text-xs font-bold uppercase tracking-widest mb-4" style="color: #4a5a80;">Key Physics</h2>
-      <div class="space-y-4 text-sm leading-relaxed" style="color: #8899aa;">
-        <div>
-          <h3 class="font-semibold mb-1" style="color: #a0b4cc;">The Schwarzschild boundary</h3>
-          <p>r<sub>s</sub> = 2Gm/c&sup2;. No object can be compressed below its Schwarzschild radius without becoming a black hole. All black holes lie on this diagonal line (slope +1 in log-log space). The region above it is forbidden by gravity.</p>
-        </div>
-        <div>
-          <h3 class="font-semibold mb-1" style="color: #a0b4cc;">The Compton boundary</h3>
-          <p>&lambda;<sub>c</sub> = &hbar;/mc. Below this line, quantum uncertainty prevents localization. Pair production creates new particles rather than allowing further confinement. Fundamental particles lie on this line.</p>
-        </div>
-        <div>
-          <h3 class="font-semibold mb-1" style="color: #a0b4cc;">The Instanton</h3>
-          <p>At the intersection of both boundaries sits the Planck-mass instanton: a black hole whose Compton wavelength equals its Schwarzschild radius. It has Planck mass (~2.18 &times; 10<sup>-5</sup> g) and Planck length (~1.62 &times; 10<sup>-33</sup> cm). It is the smallest possible object.</p>
-        </div>
-        <div>
-          <h3 class="font-semibold mb-1" style="color: #a0b4cc;">Isodensity lines</h3>
-          <p>Diagonal lines of slope 3 connect objects of equal density. Life, planets, and stars cluster near atomic density (~1 g/cm&sup3;). Neutron stars sit on nuclear density (~10<sup>14</sup> g/cm&sup3;). The current Universe has critical density ~10<sup>-29</sup> g/cm&sup3;.</p>
-        </div>
+      <!-- Footnotes -->
+      <div class="mt-6 pt-4 space-y-2 text-xs leading-relaxed" style="color: #5a6a90; border-top: 1px solid #1a2040;">
+        <div class="fn-note" id="fn-1"><sup style="color:#5a7aaa;">1</sup> The Schwarzschild radius r<sub>s</sub> = 2Gm/c<sup>2</sup> is the radius at which the escape velocity equals the speed of light. Any object compressed below this radius becomes a black hole.</div>
+        <div class="fn-note" id="fn-2"><sup style="color:#5a7aaa;">2</sup> The Compton wavelength &lambda;<sub>c</sub> = &hbar;/mc is the quantum-mechanical limit on spatial localization. Below this scale, the confinement energy exceeds the rest mass, triggering particle&ndash;antiparticle pair creation.</div>
+        <div class="fn-note" id="fn-3"><sup style="color:#5a7aaa;">3</sup> The Planck-mass instanton has mass m<sub>P</sub> &asymp; 2.18 &times; 10<sup>&minus;5</sup> g and radius l<sub>P</sub> &asymp; 1.62 &times; 10<sup>&minus;33</sup> cm. It is the unique object whose Schwarzschild radius equals its Compton wavelength.</div>
       </div>
     </section>
 
@@ -85,7 +86,7 @@
     <section class="mb-14">
       <h2 class="text-xs font-bold uppercase tracking-widest mb-4" style="color: #4a5a80;">The Creator</h2>
       <p class="text-sm leading-relaxed mb-3" style="color: #8899aa;">
-        This site is an experiment in data visualization created by <a href="https://saminloes.com" style="color: #a0b4cc; text-decoration: underline;" onmouseover="this.style.color='#7799cc'" onmouseout="this.style.color='#a0b4cc'">Sam Inloes</a>, a software developer based in San Francisco.
+        This interactive visualization was created by <a href="https://saminloes.com" style="color: #a0b4cc; text-decoration: underline;" onmouseover="this.style.color='#7799cc'" onmouseout="this.style.color='#a0b4cc'">Sam Inloes</a>, a software developer based in San Francisco.
       </p>
     </section>
 
@@ -104,5 +105,21 @@
     <p class="text-xs" style="color: #3a4a6a;">Based on Lineweaver &amp; Patel (2023). Licensed CC BY 4.0.</p>
   </footer>
 </div>
+
+<script>
+  // Footnote hover highlight
+  document.querySelectorAll('.fn-ref').forEach(function(ref) {
+    var fnId = 'fn-' + ref.dataset.fn;
+    var note = document.getElementById(fnId);
+    if (!note) return;
+    ref.addEventListener('mouseenter', function() {
+      note.classList.add('fn-highlight');
+      note.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    ref.addEventListener('mouseleave', function() {
+      note.classList.remove('fn-highlight');
+    });
+  });
+</script>
 </body>
 </html>

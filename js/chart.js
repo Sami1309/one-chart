@@ -149,39 +149,73 @@ function drawBackground(xS, yS) {
     .attr('height', yS(DRAW_Y[0]) - yS(DRAW_Y[1]))
     .attr('fill', dk ? 'rgba(40,35,20,0.25)' : 'rgba(180,170,140,0.15)');
 
-  // Inflation-dominated background (subtle purple tint, x < -20)
-  const infRegion = [
-    [xS(DRAW_X[0]), yS(DRAW_Y[1])], [xS(-20), yS(DRAW_Y[1])],
-    [xS(-20), yS(DRAW_Y[0])], [xS(DRAW_X[0]), yS(DRAW_Y[0])],
-  ];
-  ca.append('polygon').attr('points', infRegion.map(p => p.join(',')).join(' '))
+  // Domination background regions — diagonal strips bounded by isodensity lines
+  // Boundaries at physical density transitions:
+  //   Inflation → Radiation: GUT density (logRho = 75)
+  //   Radiation → Matter: matter-radiation equality (logRho ≈ -17)
+  //   Matter → Dark energy: "now" density (logRho = -29.3)
+  const LOG_4PI3 = Math.log10(4 * Math.PI / 3);
+  const bGUT = LOG_4PI3 + 75;      // inflation/radiation boundary
+  const bEQ  = LOG_4PI3 + (-17);   // radiation/matter boundary
+  const bNow = LOG_4PI3 + (-29.3); // matter/dark energy boundary
+
+  // Helper: trace points along an isodensity line (logM = 3*logR + b)
+  function isoLine(b, step) {
+    const pts = [];
+    for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += step)
+      pts.push([lr, 3 * lr + b]);
+    return pts;
+  }
+
+  // Helper: make polygon between two isodensity lines (strip)
+  function densityStrip(b_upper, b_lower) {
+    const upper = isoLine(b_upper, 4);
+    const lower = isoLine(b_lower, 4);
+    return [
+      ...upper.map(p => [xS(p[0]), yS(p[1])]),
+      ...lower.reverse().map(p => [xS(p[0]), yS(p[1])]),
+    ];
+  }
+
+  // Helper: make polygon above an isodensity line (to DRAW ceiling)
+  function aboveLine(b) {
+    const line = isoLine(b, 4);
+    return [
+      ...line.map(p => [xS(p[0]), yS(p[1])]),
+      [xS(DRAW_X[1]), yS(DRAW_Y[1])],
+      [xS(DRAW_X[0]), yS(DRAW_Y[1])],
+    ];
+  }
+
+  // Helper: make polygon below an isodensity line (to DRAW floor)
+  function belowLine(b) {
+    const line = isoLine(b, 4);
+    return [
+      ...line.map(p => [xS(p[0]), yS(p[1])]),
+      [xS(DRAW_X[1]), yS(DRAW_Y[0])],
+      [xS(DRAW_X[0]), yS(DRAW_Y[0])],
+    ];
+  }
+
+  const toAttr = pts => pts.map(p => p.join(',')).join(' ');
+
+  // Inflation: above GUT density line
+  ca.append('polygon').attr('points', toAttr(aboveLine(bGUT)))
     .attr('class', 'bg-epoch bg-inflation')
     .attr('fill', dk ? 'rgba(60,40,70,0.1)' : 'rgba(180,160,200,0.06)');
 
-  // Radiation-dominated background (pink tint)
-  const radRegion = [
-    [xS(-20), yS(DRAW_Y[1])], [xS(5), yS(DRAW_Y[1])],
-    [xS(5), yS(DRAW_Y[0])], [xS(-20), yS(DRAW_Y[0])],
-  ];
-  ca.append('polygon').attr('points', radRegion.map(p => p.join(',')).join(' '))
+  // Radiation: between GUT and matter-radiation equality
+  ca.append('polygon').attr('points', toAttr(densityStrip(bGUT, bEQ)))
     .attr('class', 'bg-epoch bg-radiation')
     .attr('fill', dk ? 'rgba(100,40,40,0.12)' : 'rgba(200,140,140,0.06)');
 
-  // Matter-dominated (blue tint)
-  const matRegion = [
-    [xS(5), yS(DRAW_Y[1])], [xS(30), yS(DRAW_Y[1])],
-    [xS(30), yS(DRAW_Y[0])], [xS(5), yS(DRAW_Y[0])],
-  ];
-  ca.append('polygon').attr('points', matRegion.map(p => p.join(',')).join(' '))
+  // Matter: between equality and "now"
+  ca.append('polygon').attr('points', toAttr(densityStrip(bEQ, bNow)))
     .attr('class', 'bg-epoch bg-matter')
     .attr('fill', dk ? 'rgba(30,40,100,0.12)' : 'rgba(140,160,200,0.06)');
 
-  // Dark energy (grey tint)
-  const deRegion = [
-    [xS(30), yS(DRAW_Y[1])], [xS(DRAW_X[1]), yS(DRAW_Y[1])],
-    [xS(DRAW_X[1]), yS(DRAW_Y[0])], [xS(30), yS(DRAW_Y[0])],
-  ];
-  ca.append('polygon').attr('points', deRegion.map(p => p.join(',')).join(' '))
+  // Dark energy: below "now" density line
+  ca.append('polygon').attr('points', toAttr(belowLine(bNow)))
     .attr('class', 'bg-epoch bg-darkenergy')
     .attr('fill', dk ? 'rgba(50,50,70,0.1)' : 'rgba(180,180,180,0.06)');
 
@@ -462,8 +496,12 @@ function drawSpecialAnnotations(xS, yS) {
         .attr('y1', 0).attr('y2', 6)
         .attr('stroke', dk ? 'rgba(160,150,140,0.4)' : 'rgba(100,90,80,0.5)')
         .attr('stroke-width', 1);
-      // Label (proximity-triggered near top axis, angled along isodensity line)
-      const lx = xx + 4, ly = 12;
+      // Label offset down-left along the isodensity line from top intersection
+      // Line goes up-right in screen space; negate to go down-left into the chart
+      const lineLen = Math.sqrt(unitDx * unitDx + 9 * unitDy * unitDy);
+      const offset = 40;
+      const lx = xx - (unitDx / lineLen) * offset;
+      const ly = 0 + (-3 * unitDy / lineLen) * offset;
       const labelText = ca.append('text')
         .attr('class', 'epoch-prox-label')
         .datum({ xPos: xx })
