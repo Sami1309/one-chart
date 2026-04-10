@@ -267,18 +267,30 @@ function drawForbidden(xS, yS) {
       'Forbidden by Gravity',
       'The region above the Schwarzschild line (r = 2Gm/c\u00B2) is forbidden by general relativity. Any object compressed below its Schwarzschild radius collapses into a black hole. No stable structure can exist in this region.',
       'Schwarzschild_radius');
-    const quantLabel = addLabel('quantum uncertainty', 8, -38, cAngle,
+    const quantLabel = addLabel('quantum uncertainty', 15, -56, cAngle,
       'rgba(140,100,80,0.35)', 'rgba(180,140,100,0.25)', 16);
     addEraTooltip(quantLabel,
       'Quantum Uncertainty',
       'The region below the Compton line (\u03BB = \u0127/mc) is forbidden by quantum mechanics. Confining a particle below its Compton wavelength provides enough energy to create particle\u2013antiparticle pairs, preventing further localization.',
       'Compton_wavelength');
-    addLabel('Compton limit', -8, -22, cAngle,
+    const compLabel = addLabel('Compton limit', -16, -20, cAngle,
       'rgba(140,100,80,0.4)', 'rgba(180,140,100,0.3)', 11);
-    addLabel('sub \u2013 Planckian unknown', -37, 10, -90,
+    addEraTooltip(compLabel,
+      'Compton Wavelength',
+      'The Compton wavelength \u03BB = \u0127/mc is the minimum size at which a particle of mass m can be localized. Below this scale, the uncertainty in energy exceeds the rest mass energy, triggering spontaneous particle\u2013antiparticle pair creation. All fundamental particles sit on this line.',
+      'Compton_wavelength');
+    const subPLabel = addLabel('sub \u2013 Planckian unknown', -37, 10, -90,
       'rgba(150,140,100,0.4)', 'rgba(180,160,100,0.3)', 12);
-    addLabel('QG', -36.5, -5, 0,
+    addEraTooltip(subPLabel,
+      'Sub-Planckian Unknown',
+      'The region at radii smaller than the Planck length (~1.62 \u00D7 10\u207B\u00B3\u00B3 cm). No known physics can describe structures at these scales. Both general relativity and quantum field theory break down, and a theory of quantum gravity is needed.',
+      'Planck_length');
+    const qgLabel = addLabel('QG', -36.5, -5, 0,
       'rgba(140,80,160,0.5)', 'rgba(160,100,200,0.4)', 11);
+    addEraTooltip(qgLabel,
+      'Quantum Gravity',
+      'The doubly-forbidden region where both the Schwarzschild and Compton boundaries are violated simultaneously. Objects here would need to be both smaller than their black hole radius and below their Compton wavelength. A complete theory of quantum gravity is required to describe this regime.',
+      'Quantum_gravity');
     addLabel('black holes', -8, 18, bhAngle,
       'rgba(80,60,60,0.5)', 'rgba(180,150,150,0.35)', 12);
   }
@@ -378,11 +390,15 @@ function drawBoundaries(xS, yS) {
     .attr('stroke-dasharray','4,4').attr('stroke-width',1);
 
   if (App.showLabels) {
-    ca.append('text')
+    const mpLabel = ca.append('text')
       .attr('x', xS(App.X_DOMAIN[0]) + 4).attr('y', yS(pmLM) - 3)
       .attr('fill', dk ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.3)')
       .style('font-size','9px').style('font-style','italic')
       .text('m_P');
+    addEraTooltip(mpLabel,
+      'Planck Mass',
+      'The Planck mass m_P = \u221A(\u0127c/G) \u2248 2.18 \u00D7 10\u207B\u2075 g (~1.22 \u00D7 10\u00B9\u2079 GeV). It is the mass scale at which quantum gravitational effects become significant. A black hole with Planck mass has a Schwarzschild radius equal to its Compton wavelength.',
+      'Planck_units');
     ca.append('text')
       .attr('x', xS(plLR) + 3).attr('y', yS(App.Y_DOMAIN[0]) + 12)
       .attr('fill', dk ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.3)')
