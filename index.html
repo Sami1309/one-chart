@@ -98,11 +98,12 @@
   #info-modal {
     opacity: 0;
   }
+  /* First visit: backdrop is immediately opaque (no chart flash), card fades in */
   #info-modal.modal-animate {
-    animation: modalFadeIn 0.35s ease-out forwards;
+    opacity: 1;
   }
   #info-modal.modal-animate > div {
-    animation: modalCardIn 0.4s ease-out 0.08s forwards;
+    animation: modalCardIn 0.4s ease-out 0.1s forwards;
     opacity: 0;
   }
 
