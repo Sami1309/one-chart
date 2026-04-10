@@ -11,6 +11,7 @@ function initInfoModal() {
 
   function openModal() {
     modal.style.display = 'flex';
+    modal.style.opacity = '0';
     requestAnimationFrame(() => { modal.style.opacity = '1'; });
   }
 
@@ -28,10 +29,8 @@ function initInfoModal() {
     tourBtn.onclick = openModal;
   }
 
-  // Auto-show on first visit
-  if (!hasVisited) {
-    openModal();
-  }
+  // For first visit, the modal is already visible via HTML defaults.
+  // No need to call openModal() — it's only needed for the tour button.
 }
 
 function zoomToRegion(x0, x1, y0, y1, duration) {

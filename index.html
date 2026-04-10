@@ -207,7 +207,8 @@
 </div>
 
 <!-- Info modal -->
-<div id="info-modal" class="fixed inset-0 z-[250] flex items-center justify-center" style="display:none; opacity:0; transition: opacity 0.4s; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);">
+<div id="info-modal" class="fixed inset-0 z-[250] flex items-center justify-center" style="opacity:1; transition: opacity 0.4s; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);">
+<script>if(localStorage.getItem('allObjects_visited')){var m=document.getElementById('info-modal');m.style.display='none';m.style.opacity='0';}</script>
   <div class="rounded-2xl max-w-lg w-[92%] relative overflow-hidden" style="background: linear-gradient(160deg, #0e1528 0%, #131d36 100%); border: 1px solid rgba(55,75,130,0.25); box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
     <button id="info-close" class="absolute top-4 right-5 text-lg cursor-pointer" style="color: #3a4a6a; transition: color 0.15s;" onmouseover="this.style.color='#7888aa'" onmouseout="this.style.color='#3a4a6a'">&times;</button>
     <div class="px-8 pt-8 pb-5">
