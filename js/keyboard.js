@@ -131,7 +131,6 @@ function focusObject(obj) {
   tt.style.top = (App.height / 2 + App.margin.top + 30) + 'px';
   tooltipEl.classList.add('tt-visible');
 
-  if (typeof Journal !== 'undefined') Journal.discover(obj.name);
 
   // Auto-hide after 3s
   clearTimeout(App._kbTooltipTimer);

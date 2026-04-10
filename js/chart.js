@@ -555,8 +555,6 @@ function drawObjects(xS, yS) {
       positionTooltip(event);
       tooltipEl.classList.add('tt-visible');
 
-      // Track discovery
-      if (typeof Journal !== 'undefined') Journal.discover(obj.name);
 
       // Hover ring
       d3.select(this).append('circle')
