@@ -13,12 +13,28 @@ const App = {
   X_DOMAIN: [-42, 58],
   Y_DOMAIN: [-58, 68],
   _tooltipStaleAfterZoom: false,
+  _mouseX: -9999, _mouseY: -9999,
   // Filled during init
   svg: null, g: null, chartArea: null, zoom: null, bgRect: null,
   baseX: null, baseY: null,
   xAxisG: null, yAxisG: null, xAxisTopG: null, yAxisRightG: null,
   xLabelBottom: null, xLabelTop: null, yLabelLeft: null, yLabelRight: null,
 };
+
+// ============================================================
+// ZOOM-DEPENDENT LABEL GROUPS
+// ============================================================
+// At low zoom, show high-level group labels. As user zooms in, crossfade to individual labels.
+const LABEL_GROUPS = [
+  { cats: ['particle'], hidden: true },
+  { label: "Life", logR: 1, logM: 6, cats: ['life'], color: catCol.life, fontSize: 15 },
+  { label: "Solar System", logR: 5, logM: 23, cats: ['solar_system'], color: catCol.solar_system, fontSize: 13 },
+  { label: "Stars &\nRemnants", logR: 8, logM: 37, cats: ['star', 'compact'], color: catCol.star, fontSize: 14 },
+  { label: "Galaxies", logR: 24, logM: 44, cats: ['galaxy'], color: catCol.galaxy, fontSize: 14 },
+  { cats: ['largescale'], hidden: true },
+];
+// Proximity reveal radii (px)
+const PROX_DETAIL_RADIUS = 140;
 
 // ============================================================
 // DIMENSIONS
@@ -412,6 +428,11 @@ function drawObjects(xS, yS) {
   const ca = App.chartArea;
   const dk = App.darkMode;
 
+  // Zoom-dependent label opacity: group labels fade out, individual labels fade in
+  const k = App.curT.k;
+  const groupAlpha = Math.max(0, Math.min(1, (3.5 - k) / 2));
+  const detailAlpha = Math.max(0, Math.min(1, (k - 1.5) / 2));
+
   objects.forEach(obj => {
     const cx = xS(obj.logR), cy = yS(obj.logM);
     if (cx < -20 || cx > App.width + 20 || cy < -20 || cy > App.height + 20) return;
@@ -432,10 +453,8 @@ function drawObjects(xS, yS) {
 
     if (App.showLabels) {
       let dx = 9, dy = -5, anchor = 'start';
-      // Smart positioning: above on Compton line, below on BH line
       if (obj.cat === 'particle') { dx = 6; dy = -8; }
       else if (obj.cat === 'blackhole') { dy = 14; }
-      // Object-specific overrides
       if (obj.name.includes('Hubble')) { dx = -9; dy = 14; anchor = 'end'; }
       if (obj.name.includes('Ton')) { dx = 9; dy = 14; }
       if (obj.name.includes('Sgr')) { dx = -9; dy = 14; anchor = 'end'; }
@@ -444,9 +463,13 @@ function drawObjects(xS, yS) {
       if (obj.name.includes('Red giant')) { dx = 9; dy = 2; }
 
       gr.append('text')
+        .datum({ px: cx, py: cy, pw: groupAlpha, bo: detailAlpha })
+        .attr('class', 'prox-label')
         .attr('x', cx + dx).attr('y', cy + dy)
         .attr('fill', dk ? 'rgba(210,220,240,0.85)' : '#333')
-        .style('font-size','10px')
+        .style('font-size', '11px')
+        .style('opacity', 0)
+        .style('transition', 'opacity 0.12s ease')
         .attr('text-anchor', anchor)
         .text(obj.name);
     }
@@ -509,6 +532,26 @@ function drawObjects(xS, yS) {
       const wd = wikiData[obj.name];
       if (wd) window.open(`https://en.wikipedia.org/wiki/${wd.wiki}`, '_blank');
     });
+  });
+
+  // Apply proximity-based label visibility using last known cursor position
+  applyLabelProximity();
+}
+
+// ============================================================
+// PROXIMITY-BASED LABEL VISIBILITY
+// ============================================================
+function applyLabelProximity() {
+  const mx = App._mouseX, my = App._mouseY;
+
+  App.chartArea.selectAll('.prox-label').each(function(d) {
+    if (!d) return;
+    const dist = Math.sqrt((mx - d.px) ** 2 + (my - d.py) ** 2);
+    const prox = Math.max(0, Math.min(1, 1 - dist / PROX_DETAIL_RADIUS));
+    // pw = proximity weight (1 when zoomed out, 0 when zoomed in)
+    // bo = base opacity (0 when zoomed out, 1 when zoomed in)
+    const opacity = (1 - d.pw) * d.bo + d.pw * prox;
+    d3.select(this).style('opacity', opacity);
   });
 }
 
@@ -724,6 +767,19 @@ function initChart() {
       App._tooltipStaleAfterZoom = false;
       document.getElementById('tooltip').className = 'tooltip';
     }
+  });
+
+  // Proximity-based label reveal: track cursor and update label opacities
+  App.container.addEventListener('mousemove', function(e) {
+    const rect = App.container.getBoundingClientRect();
+    App._mouseX = e.clientX - rect.left - App.margin.left;
+    App._mouseY = e.clientY - rect.top - App.margin.top;
+    applyLabelProximity();
+  });
+  App.container.addEventListener('mouseleave', function() {
+    App._mouseX = -9999;
+    App._mouseY = -9999;
+    applyLabelProximity();
   });
 
   // Controls
