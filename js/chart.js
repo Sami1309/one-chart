@@ -11,6 +11,7 @@ const App = {
   margin: {top: 48, right: 80, bottom: 52, left: 65},
   X_DOMAIN: [-42, 58],
   Y_DOMAIN: [-58, 68],
+  _tooltipStaleAfterZoom: false,
   // Filled during init
   svg: null, g: null, chartArea: null, zoom: null,
   baseX: null, baseY: null,
@@ -391,6 +392,7 @@ function drawObjects(xS, yS) {
     }
 
     gr.on('mouseover', function(event) {
+      App._tooltipStaleAfterZoom = false;
       const mG = 10 ** obj.logM;
       const rCm = 10 ** obj.logR;
       const mSun = mG / M_sun;
@@ -641,9 +643,22 @@ function initChart() {
       const [xS, yS] = currentScales();
       updateAxes(xS, yS);
       drawAll(xS, yS);
+      // After redraw, old hover targets are gone so mouseout never fires.
+      // Mark tooltip as stale so the next mousemove dismisses it.
+      if (document.getElementById('tooltip').classList.contains('tt-visible')) {
+        App._tooltipStaleAfterZoom = true;
+      }
     });
 
   App.svg.call(App.zoom);
+
+  // Dismiss stale tooltip after zoom when cursor moves
+  App.container.addEventListener('mousemove', function() {
+    if (App._tooltipStaleAfterZoom) {
+      App._tooltipStaleAfterZoom = false;
+      document.getElementById('tooltip').className = 'tooltip';
+    }
+  });
 
   // Controls
   document.getElementById('resetZoom').onclick = () => {

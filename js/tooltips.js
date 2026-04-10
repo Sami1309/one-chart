@@ -21,6 +21,7 @@ function addEraTooltip(el, title, desc, wiki) {
   const tooltip = d3.select('#tooltip');
   el.style('cursor', 'pointer')
     .on('mouseover', function(event) {
+      App._tooltipStaleAfterZoom = false;
       const tooltipEl = tooltip.node();
       tooltipEl.className = 'tooltip';
       tooltip.html(`
