@@ -50,10 +50,19 @@
     display: block;
     object-fit: cover;
   }
+  .tooltip.tt-layout-top .tt-img-wrap {
+    background: #111;
+    border-radius: 8px 8px 0 0;
+    padding: 0 16px;
+    display: flex;
+    justify-content: center;
+  }
   .tooltip.tt-layout-top .tt-wiki-img {
     width: 100%;
-    max-height: 140px;
-    border-radius: 8px 8px 0 0;
+    max-width: 280px;
+    height: 170px;
+    object-fit: contain;
+    border-radius: 0;
   }
   .tooltip.tt-layout-side {
     display: flex;
@@ -75,6 +84,26 @@
     font-size: 10px;
     color: #3366cc;
     font-style: italic;
+  }
+
+  /* Info modal transitions */
+  @keyframes modalFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes modalCardIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  #info-modal {
+    opacity: 0;
+  }
+  #info-modal.modal-animate {
+    animation: modalFadeIn 0.35s ease-out forwards;
+  }
+  #info-modal.modal-animate > div {
+    animation: modalCardIn 0.4s ease-out 0.08s forwards;
+    opacity: 0;
   }
 
   /* Hover ring animation on object dots */
@@ -207,8 +236,8 @@
 </div>
 
 <!-- Info modal -->
-<div id="info-modal" class="fixed inset-0 z-[250] flex items-center justify-center" style="opacity:1; transition: opacity 0.4s; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);">
-<script>if(localStorage.getItem('allObjects_visited')){var m=document.getElementById('info-modal');m.style.display='none';m.style.opacity='0';}</script>
+<div id="info-modal" class="fixed inset-0 z-[250] flex items-center justify-center modal-animate" style="transition: opacity 0.4s; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);">
+<script>if(localStorage.getItem('allObjects_visited')){var m=document.getElementById('info-modal');m.style.display='none';m.classList.remove('modal-animate');}</script>
   <div class="rounded-2xl max-w-lg w-[92%] relative overflow-hidden" style="background: linear-gradient(160deg, #0e1528 0%, #131d36 100%); border: 1px solid rgba(55,75,130,0.25); box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
     <button id="info-close" class="absolute top-4 right-5 text-lg cursor-pointer" style="color: #3a4a6a; transition: color 0.15s;" onmouseover="this.style.color='#7888aa'" onmouseout="this.style.color='#3a4a6a'">&times;</button>
     <div class="px-8 pt-8 pb-5">
@@ -248,6 +277,14 @@
   initKeyboard();
   initDeepLinks();
 
+  // Preload all tooltip images so they're cached before hover
+  window._preloadedImgs = Object.values(wikiData).map(function(wd) {
+    if (!wd.img) return null;
+    var img = new Image();
+    img.src = wd.img;
+    return img;
+  }).filter(Boolean);
+
   // Legend tooltips
   (function() {
     const legendDescs = {
@@ -277,6 +314,12 @@
       const key = item.dataset.legend;
       const info = legendDescs[key];
       if (!info) return;
+      var highlightFills = {
+        inflation:  { dark: 'rgba(120,80,140,0.25)', light: 'rgba(160,140,200,0.18)' },
+        radiation:  { dark: 'rgba(180,60,60,0.25)',  light: 'rgba(220,140,140,0.18)' },
+        matter:     { dark: 'rgba(50,70,180,0.25)',  light: 'rgba(140,160,220,0.18)' },
+        darkenergy: { dark: 'rgba(100,100,140,0.22)',light: 'rgba(180,180,200,0.15)' },
+      };
       item.addEventListener('mouseenter', function(event) {
         App._tooltipStaleAfterZoom = false;
         tooltip.className = 'tooltip';
@@ -287,10 +330,29 @@
           '</div>';
         positionTooltip(event);
         tooltip.classList.add('tt-visible');
+        // Highlight the corresponding background region
+        var dk = App.darkMode;
+        var hf = highlightFills[key];
+        if (hf) {
+          App.chartArea.selectAll('.bg-' + key)
+            .attr('fill', dk ? hf.dark : hf.light)
+            .style('transition', 'fill 0.15s ease');
+        }
       });
       item.addEventListener('mousemove', positionTooltip);
       item.addEventListener('mouseleave', function() {
         tooltip.className = 'tooltip';
+        // Reset all background regions — trigger a redraw of current frame
+        var dk = App.darkMode;
+        var baseFills = {
+          inflation:  dk ? 'rgba(60,40,70,0.1)'   : 'rgba(180,160,200,0.06)',
+          radiation:  dk ? 'rgba(100,40,40,0.12)'  : 'rgba(200,140,140,0.06)',
+          matter:     dk ? 'rgba(30,40,100,0.12)'  : 'rgba(140,160,200,0.06)',
+          darkenergy: dk ? 'rgba(50,50,70,0.1)'    : 'rgba(180,180,180,0.06)',
+        };
+        Object.keys(baseFills).forEach(function(k) {
+          App.chartArea.selectAll('.bg-' + k).attr('fill', baseFills[k]);
+        });
       });
       item.addEventListener('click', function() {
         window.open('https://en.wikipedia.org/wiki/' + info.wiki, '_blank');

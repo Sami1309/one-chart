@@ -22,8 +22,8 @@ const App = {
 };
 
 // Extended draw extents — ensures backgrounds/regions fill at any zoom level
-const DRAW_X = [-100, 120];
-const DRAW_Y = [-120, 130];
+const DRAW_X = [-250, 250];
+const DRAW_Y = [-350, 350];
 
 // ============================================================
 // ZOOM-DEPENDENT LABEL GROUPS
@@ -149,12 +149,22 @@ function drawBackground(xS, yS) {
     .attr('height', yS(DRAW_Y[0]) - yS(DRAW_Y[1]))
     .attr('fill', dk ? 'rgba(40,35,20,0.25)' : 'rgba(180,170,140,0.15)');
 
+  // Inflation-dominated background (subtle purple tint, x < -20)
+  const infRegion = [
+    [xS(DRAW_X[0]), yS(DRAW_Y[1])], [xS(-20), yS(DRAW_Y[1])],
+    [xS(-20), yS(DRAW_Y[0])], [xS(DRAW_X[0]), yS(DRAW_Y[0])],
+  ];
+  ca.append('polygon').attr('points', infRegion.map(p => p.join(',')).join(' '))
+    .attr('class', 'bg-epoch bg-inflation')
+    .attr('fill', dk ? 'rgba(60,40,70,0.1)' : 'rgba(180,160,200,0.06)');
+
   // Radiation-dominated background (pink tint)
   const radRegion = [
     [xS(-20), yS(DRAW_Y[1])], [xS(5), yS(DRAW_Y[1])],
     [xS(5), yS(DRAW_Y[0])], [xS(-20), yS(DRAW_Y[0])],
   ];
   ca.append('polygon').attr('points', radRegion.map(p => p.join(',')).join(' '))
+    .attr('class', 'bg-epoch bg-radiation')
     .attr('fill', dk ? 'rgba(100,40,40,0.12)' : 'rgba(200,140,140,0.06)');
 
   // Matter-dominated (blue tint)
@@ -163,6 +173,7 @@ function drawBackground(xS, yS) {
     [xS(30), yS(DRAW_Y[0])], [xS(5), yS(DRAW_Y[0])],
   ];
   ca.append('polygon').attr('points', matRegion.map(p => p.join(',')).join(' '))
+    .attr('class', 'bg-epoch bg-matter')
     .attr('fill', dk ? 'rgba(30,40,100,0.12)' : 'rgba(140,160,200,0.06)');
 
   // Dark energy (grey tint)
@@ -171,6 +182,7 @@ function drawBackground(xS, yS) {
     [xS(DRAW_X[1]), yS(DRAW_Y[0])], [xS(30), yS(DRAW_Y[0])],
   ];
   ca.append('polygon').attr('points', deRegion.map(p => p.join(',')).join(' '))
+    .attr('class', 'bg-epoch bg-darkenergy')
     .attr('fill', dk ? 'rgba(50,50,70,0.1)' : 'rgba(180,180,180,0.06)');
 
   // Starfield (dark mode only)
@@ -205,7 +217,7 @@ function drawForbidden(xS, yS) {
   // BH line: logM = logR - BH_const
   // Forbidden by gravity: ABOVE the BH line
   const bhPts = [];
-  for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 0.5)
+  for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 2)
     bhPts.push([xS(lr), yS(lr - BH_const)]);
 
   const gravPoly = [
@@ -219,7 +231,7 @@ function drawForbidden(xS, yS) {
   // Compton line: logM = -logR + C_const
   // Forbidden by quantum uncertainty: BELOW the Compton line
   const cPts = [];
-  for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 0.5)
+  for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 2)
     cPts.push([xS(lr), yS(-lr + C_const)]);
 
   const qPoly = [
@@ -233,9 +245,9 @@ function drawForbidden(xS, yS) {
   // QG doubly-forbidden region
   const instLR = log10(l_planck);
   const qgPts = [];
-  for (let lr = DRAW_X[0]; lr <= instLR; lr += 0.3)
+  for (let lr = DRAW_X[0]; lr <= instLR; lr += 1)
     qgPts.push([xS(lr), yS(lr - BH_const)]);
-  for (let lr = instLR; lr >= DRAW_X[0]; lr -= 0.3)
+  for (let lr = instLR; lr >= DRAW_X[0]; lr -= 1)
     qgPts.push([xS(lr), yS(-lr + C_const)]);
 
   if (qgPts.length > 2) {
@@ -261,13 +273,13 @@ function drawForbidden(xS, yS) {
         .attr('transform', `rotate(${rot}, ${xS(lx)}, ${yS(ly)})`)
         .text(text);
     };
-    const gravLabel = addLabel('forbidden by gravity', -8, 45, bhAngle,
+    const gravLabel = addLabel('forbidden by gravity', -8, 32, bhAngle,
       'rgba(160,80,80,0.4)', 'rgba(200,100,100,0.3)', 16);
     addEraTooltip(gravLabel,
       'Forbidden by Gravity',
       'The region above the Schwarzschild line (r = 2Gm/c\u00B2) is forbidden by general relativity. Any object compressed below its Schwarzschild radius collapses into a black hole. No stable structure can exist in this region.',
       'Schwarzschild_radius');
-    const quantLabel = addLabel('quantum uncertainty', 15, -56, cAngle,
+    const quantLabel = addLabel('quantum uncertainty', 5, -54, cAngle,
       'rgba(140,100,80,0.35)', 'rgba(180,140,100,0.25)', 16);
     addEraTooltip(quantLabel,
       'Quantum Uncertainty',
@@ -291,8 +303,12 @@ function drawForbidden(xS, yS) {
       'Quantum Gravity',
       'The doubly-forbidden region where both the Schwarzschild and Compton boundaries are violated simultaneously. Objects here would need to be both smaller than their black hole radius and below their Compton wavelength. A complete theory of quantum gravity is required to describe this regime.',
       'Quantum_gravity');
-    addLabel('black holes', -8, 18, bhAngle,
+    const bhLabel = addLabel('black holes', -8, 18, bhAngle,
       'rgba(80,60,60,0.5)', 'rgba(180,150,150,0.35)', 12);
+    addEraTooltip(bhLabel,
+      'Black Holes',
+      'Objects on the Schwarzschild line (r = 2Gm/c\u00B2) are black holes \u2014 objects whose radius equals their Schwarzschild radius. They range from the Planck-mass instanton (~10\u207B\u2075 g) to ultramassive black holes like Ton 618 (~10\u2074\u00B2 g). Despite spanning 47 orders of magnitude in mass, all lie on a single straight line in log-log space.',
+      'Black_hole');
   }
 }
 
@@ -303,7 +319,7 @@ function drawIsodensity(xS, yS) {
   isodensityLines.forEach(iso => {
     const intercept = Math.log10(4 * Math.PI / 3) + iso.logRho;
     const pts = [];
-    for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 1) {
+    for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 2) {
       const lm = 3 * lr + intercept;
       if (lm >= DRAW_Y[0] && lm <= DRAW_Y[1])
         pts.push([lr, lm]);
@@ -317,31 +333,7 @@ function drawIsodensity(xS, yS) {
       .attr('stroke', dk ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)')
       .attr('stroke-width', 1).attr('stroke-dasharray','6,4');
 
-    if (App.showLabels) {
-      const lp = pts[pts.length - 1];
-      const labelText = ca.append('text')
-        .attr('x', xS(lp[0]) - 2).attr('y', yS(lp[1]) + 3)
-        .attr('fill', dk ? 'rgba(160,150,140,0.5)' : 'rgba(100,90,80,0.6)')
-        .style('font-size','8px')
-        .attr('text-anchor','end')
-        .attr('transform', `rotate(-72, ${xS(lp[0])-2}, ${yS(lp[1])+3})`)
-        .text(iso.label);
-
-      if (iso.desc) addEraTooltip(labelText, iso.label, iso.desc, iso.wiki);
-
-      if (iso.tag) {
-        const mp = pts[Math.floor(pts.length * 0.4)];
-        const tagText = ca.append('text')
-          .attr('x', xS(mp[0])).attr('y', yS(mp[1]) - 6)
-          .attr('fill', dk ? 'rgba(160,150,140,0.4)' : 'rgba(100,90,80,0.5)')
-          .style('font-size','8px').style('font-style','italic')
-          .attr('text-anchor','middle')
-          .attr('transform', `rotate(-72, ${xS(mp[0])}, ${yS(mp[1])-6})`)
-          .text(iso.tag);
-
-        if (iso.desc) addEraTooltip(tagText, iso.label, iso.desc, iso.wiki);
-      }
-    }
+    // Isodensity labels are now only on the top axis (see drawSpecialAnnotations)
   });
 }
 
@@ -351,7 +343,7 @@ function drawBoundaries(xS, yS) {
 
   // Black hole line
   const bhPts = [];
-  for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 0.5) {
+  for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 2) {
     const lm = lr - BH_const;
     if (lm >= DRAW_Y[0] && lm <= DRAW_Y[1])
       bhPts.push([xS(lr), yS(lm)]);
@@ -363,7 +355,7 @@ function drawBoundaries(xS, yS) {
 
   // Compton line
   const cPts = [];
-  for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 0.5) {
+  for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 2) {
     const lm = -lr + C_const;
     if (lm >= DRAW_Y[0] && lm <= DRAW_Y[1])
       cPts.push([xS(lr), yS(lm)]);
@@ -448,6 +440,42 @@ function drawSpecialAnnotations(xS, yS) {
         .style('transition', 'opacity 0.15s ease')
         .text(e.label);
       addEraTooltip(labelText, e.label, e.desc, e.wiki);
+    }
+  });
+
+  // Epoch labels on top axis — positioned where each isodensity line
+  // crosses the top of the visible chart area, angled to match the line
+  // logM = 3*logR + intercept => logR = (yTop - intercept) / 3
+  const yTop = yS.invert ? yS.invert(0) : App.Y_DOMAIN[1];
+  // Compute screen angle of isodensity lines (slope 3 in log-log)
+  const unitDx = xS(1) - xS(0);
+  const unitDy = yS(1) - yS(0); // negative (y goes up)
+  const isoAngle = Math.atan2(3 * unitDy, unitDx) * 180 / Math.PI;
+  isodensityLines.forEach(iso => {
+    const intercept = Math.log10(4 * Math.PI / 3) + iso.logRho;
+    const logR_at_top = (yTop - intercept) / 3;
+    const xx = xS(logR_at_top);
+    if (xx > 30 && xx < App.width - 30) {
+      // Small tick mark at top axis
+      ca.append('line')
+        .attr('x1', xx).attr('x2', xx)
+        .attr('y1', 0).attr('y2', 6)
+        .attr('stroke', dk ? 'rgba(160,150,140,0.4)' : 'rgba(100,90,80,0.5)')
+        .attr('stroke-width', 1);
+      // Label (proximity-triggered near top axis, angled along isodensity line)
+      const lx = xx + 4, ly = 12;
+      const labelText = ca.append('text')
+        .attr('class', 'epoch-prox-label')
+        .datum({ xPos: xx })
+        .attr('x', lx).attr('y', ly)
+        .attr('fill', dk ? 'rgba(160,150,140,0.7)' : 'rgba(100,90,80,0.7)')
+        .style('font-size', '9px').style('font-weight','600')
+        .attr('text-anchor', 'start')
+        .attr('transform', `rotate(${isoAngle}, ${lx}, ${ly})`)
+        .style('opacity', 0)
+        .style('transition', 'opacity 0.15s ease')
+        .text(iso.label);
+      if (iso.desc) addEraTooltip(labelText, iso.label, iso.desc, iso.wiki);
     }
   });
 
@@ -546,7 +574,7 @@ function drawObjects(xS, yS) {
         if (wd.layout === 'side') {
           tooltip.html(`<img class="tt-wiki-img" src="${wd.img}" /><div class="tt-content">${textHtml}</div>`);
         } else {
-          tooltip.html(`<img class="tt-wiki-img" src="${wd.img}" />${textHtml}`);
+          tooltip.html(`<div class="tt-img-wrap"><img class="tt-wiki-img" src="${wd.img}" /></div>${textHtml}`);
         }
       } else {
         tooltip.html(textHtml);
@@ -603,6 +631,16 @@ function applyLabelProximity() {
     const yDist = Math.abs(my - d.yPos);
     const dist = Math.sqrt(rightDist * rightDist + yDist * yDist);
     const opacity = rightDist < 100 ? Math.max(0, Math.min(1, 1 - dist / 200)) : 0;
+    d3.select(this).style('opacity', opacity);
+  });
+
+  // Epoch labels: show when cursor is near the top axis
+  const topDist = my; // distance from top of chart area
+  App.chartArea.selectAll('.epoch-prox-label').each(function(d) {
+    if (!d) return;
+    const xDist = Math.abs(mx - d.xPos);
+    const dist = Math.sqrt(topDist * topDist + xDist * xDist);
+    const opacity = topDist < 100 ? Math.max(0, Math.min(1, 1 - dist / 200)) : 0;
     d3.select(this).style('opacity', opacity);
   });
 }
@@ -792,9 +830,12 @@ function initChart() {
   App.baseX = makeX();
   App.baseY = makeY();
 
-  // Zoom
+  // Zoom — constrain panning to the domain limits [-200,200] x [-300,300]
+  const panX0 = App.baseX(-200), panX1 = App.baseX(200);
+  const panY0 = App.baseY(300),  panY1 = App.baseY(-300); // note: y is inverted
   App.zoom = d3.zoom()
     .scaleExtent([0.3, 80])
+    .translateExtent([[panX0, panY0], [panX1, panY1]])
     .on('zoom', function(event) {
       App.curT = event.transform;
       const [xS, yS] = currentScales();

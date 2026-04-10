@@ -11,13 +11,22 @@ function initInfoModal() {
 
   function openModal() {
     modal.style.display = 'flex';
-    modal.style.opacity = '0';
-    requestAnimationFrame(() => { modal.style.opacity = '1'; });
+    modal.style.opacity = '1';
   }
 
   function closeModal() {
+    modal.classList.remove('modal-animate');
+    // Hide card instantly
+    modal.querySelector(':scope > div').style.display = 'none';
+    // Fade out backdrop blur
+    modal.style.transition = 'opacity 0.18s ease-out';
     modal.style.opacity = '0';
-    setTimeout(() => { modal.style.display = 'none'; }, 400);
+    setTimeout(() => {
+      modal.style.display = 'none';
+      modal.style.transition = '';
+      modal.style.opacity = '';
+      modal.querySelector(':scope > div').style.display = '';
+    }, 190);
     localStorage.setItem('allObjects_visited', 'true');
   }
 
