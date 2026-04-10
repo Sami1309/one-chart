@@ -109,6 +109,49 @@
   .detail-panel h2 { color: #b33; font-size: 17px; margin-bottom: 6px; }
   .detail-panel .detail-data { font-size: 12px; color: #666; margin-bottom: 8px; line-height: 1.6; }
   .detail-panel .detail-text { font-size: 13px; line-height: 1.6; color: #333; }
+
+  /* Legend interactivity */
+  .legend-item { cursor: pointer; transition: opacity 0.15s; }
+  .legend-item:hover { opacity: 0.7; }
+
+  /* Dark mode */
+  body.dark-mode { background: #080c18; color: #c8d0e0; }
+  body.dark-mode nav { background: #0d1225; border-color: #1a2040; }
+  body.dark-mode nav a { color: #7888aa; }
+  body.dark-mode nav .text-gray-700 { color: #7888aa; }
+  body.dark-mode nav .text-gray-500 { color: #5a6a90; }
+  body.dark-mode nav .text-gray-400 { color: #4a5a80; }
+  body.dark-mode nav select,
+  body.dark-mode nav button { background: #151d35; color: #7888aa; border-color: #1e2a50; }
+  body.dark-mode nav select:hover,
+  body.dark-mode nav button:hover { background: #1a2545; }
+  body.dark-mode #chart-container { background: #080c18; }
+  body.dark-mode .tooltip { background: rgba(12,16,35,0.96); border-color: #334488; color: #bcc8e0; box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+  body.dark-mode .tooltip .tt-title { color: #7799cc; }
+  body.dark-mode .tooltip .tt-data { color: #7888aa; }
+  body.dark-mode .tooltip .tt-desc { color: #8899aa; }
+  body.dark-mode .tooltip .tt-wiki-link { color: #6688bb; }
+  body.dark-mode .legend-box { background: rgba(10,14,28,0.92); border-color: #1e2a50; color: #7888aa; }
+  body.dark-mode .legend-box h3 { color: #7799cc; }
+  body.dark-mode .legend-box .legend-swatch { border-color: #334466; }
+  body.dark-mode .hint-bar { color: #3a4a6a; }
+  body.dark-mode .detail-panel { background: rgba(12,16,35,0.98); border-color: #334488; }
+  body.dark-mode .detail-panel h2 { color: #7799cc; }
+  body.dark-mode .detail-panel .detail-data { color: #7888aa; }
+  body.dark-mode .detail-panel .detail-text { color: #8899aa; }
+  body.dark-mode .detail-panel .close-btn { color: #7799cc; }
+  body.dark-mode #slideshow-overlay > div { background: #111830; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+  body.dark-mode #slideshow-overlay #slide-title { color: #c8d0e0; }
+  body.dark-mode #slideshow-overlay #slide-text { color: #8899aa; }
+  body.dark-mode #slideshow-overlay #slide-skip,
+  body.dark-mode #slideshow-overlay #slide-prev { color: #5a6a90; }
+  body.dark-mode #slideshow-overlay .bg-gray-300 { background-color: #2a3660; }
+  body.dark-mode #help-overlay > div { background: #111830; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+  body.dark-mode #help-overlay .text-gray-800 { color: #c8d0e0; }
+  body.dark-mode #help-overlay .text-gray-600 { color: #7888aa; }
+  body.dark-mode #help-overlay .text-gray-400 { color: #5a6a90; }
+  body.dark-mode #help-overlay .border-gray-100 { border-color: #1e2a50; }
+  body.dark-mode #help-overlay .text-xs { color: #4a5a80; }
 </style>
 </head>
 <body class="bg-cream text-gray-900 overflow-hidden h-screen font-['Helvetica_Neue',Arial,sans-serif]">
@@ -138,6 +181,7 @@
         <button id="toggleLabels" class="text-[11px] px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-300 rounded cursor-pointer hover:bg-gray-200 transition-colors">Labels On/Off</button>
       </div>
       <div class="h-4 w-px bg-gray-300"></div>
+      <button id="darkModeToggle" class="text-[11px] px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-300 rounded cursor-pointer hover:bg-gray-200 transition-colors">Dark Mode</button>
       <button id="tour-btn" class="text-[11px] px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-300 rounded cursor-pointer hover:bg-gray-200 transition-colors">Tour</button>
       <a href="about.html" class="text-[11px] text-gray-500 hover:text-accent transition-colors">About</a>
     </div>
@@ -152,14 +196,14 @@
       <div class="detail-data" id="detailData"></div>
       <div class="detail-text" id="detailText"></div>
     </div>
-    <div class="absolute bottom-14 right-[90px] bg-white/90 border border-gray-400 rounded-[5px] px-3 py-2 text-[10px] z-10">
+    <div class="legend-box absolute bottom-14 right-[90px] bg-white/90 border border-gray-400 rounded-[5px] px-3 py-2 text-[10px] z-10">
       <h3 class="text-[11px] mb-1 text-accent font-bold">Domination</h3>
-      <div class="flex items-center gap-1.5 mb-0.5"><div class="w-4 h-3 border border-gray-400" style="background:#bbb;"></div> &Omega;<sub>&Lambda;<sub>i</sub></sub> (inflation)</div>
-      <div class="flex items-center gap-1.5 mb-0.5"><div class="w-4 h-3 border border-gray-400" style="background:#d4a0a0;"></div> &Omega;<sub>r</sub> (radiation)</div>
-      <div class="flex items-center gap-1.5 mb-0.5"><div class="w-4 h-3 border border-gray-400" style="background:#a0b8d4;"></div> &Omega;<sub>m</sub> (matter)</div>
-      <div class="flex items-center gap-1.5"><div class="w-4 h-3 border border-gray-400" style="background:#ccc;"></div> &Omega;<sub>&Lambda;</sub> (dark energy)</div>
+      <div class="legend-item flex items-center gap-1.5 mb-0.5" data-legend="inflation"><div class="legend-swatch w-4 h-3 border border-gray-400" style="background:#bbb;"></div> &Omega;<sub>&Lambda;<sub>i</sub></sub> (inflation)</div>
+      <div class="legend-item flex items-center gap-1.5 mb-0.5" data-legend="radiation"><div class="legend-swatch w-4 h-3 border border-gray-400" style="background:#d4a0a0;"></div> &Omega;<sub>r</sub> (radiation)</div>
+      <div class="legend-item flex items-center gap-1.5 mb-0.5" data-legend="matter"><div class="legend-swatch w-4 h-3 border border-gray-400" style="background:#a0b8d4;"></div> &Omega;<sub>m</sub> (matter)</div>
+      <div class="legend-item flex items-center gap-1.5" data-legend="darkenergy"><div class="legend-swatch w-4 h-3 border border-gray-400" style="background:#ccc;"></div> &Omega;<sub>&Lambda;</sub> (dark energy)</div>
     </div>
-    <div class="absolute bottom-2 left-20 text-[10px] text-gray-400 z-10">Scroll to zoom &middot; Drag to pan &middot; Hover for info &middot; Click for Wikipedia &middot; Press <strong>?</strong> for keyboard shortcuts</div>
+    <div class="hint-bar absolute bottom-2 left-20 text-[10px] text-gray-400 z-10">Scroll to zoom &middot; Drag to pan &middot; Hover for info &middot; Click for Wikipedia &middot; Press <strong>?</strong> for keyboard shortcuts</div>
   </div>
 </div>
 
@@ -187,6 +231,56 @@
   initSlideshow();
   initKeyboard();
   initDeepLinks();
+
+  // Legend tooltips
+  (function() {
+    const legendDescs = {
+      inflation: {
+        title: "Inflationary Epoch",
+        desc: "The Universe underwent exponential expansion driven by a scalar field (inflaton) in the first ~10\u207B\u00B3\u00B2 seconds, expanding by a factor of ~10\u00B2\u2076. This era explains the flatness, horizon, and monopole problems of standard Big Bang cosmology.",
+        wiki: "Inflation_(cosmology)"
+      },
+      radiation: {
+        title: "Radiation Domination",
+        desc: "From the end of inflation to ~47,000 years after the Big Bang, the energy density was dominated by photons and relativistic particles. Key events include baryogenesis, Big Bang nucleosynthesis, and neutrino decoupling.",
+        wiki: "Radiation-dominated_era"
+      },
+      matter: {
+        title: "Matter Domination",
+        desc: "From ~47,000 years to ~9.8 billion years, non-relativistic matter (dark matter and baryonic matter) dominated. Gravitational collapse of dark matter halos drove galaxy and large-scale structure formation.",
+        wiki: "Matter-dominated_era"
+      },
+      darkenergy: {
+        title: "Dark Energy Domination",
+        desc: "The current era, beginning ~9.8 billion years after the Big Bang (~3.8 Gyr ago). Dark energy causes the expansion of the Universe to accelerate. ~68% of the total energy density today is dark energy.",
+        wiki: "Dark_energy"
+      }
+    };
+    const tooltip = document.getElementById('tooltip');
+    document.querySelectorAll('.legend-item').forEach(function(item) {
+      const key = item.dataset.legend;
+      const info = legendDescs[key];
+      if (!info) return;
+      item.addEventListener('mouseenter', function(event) {
+        App._tooltipStaleAfterZoom = false;
+        tooltip.className = 'tooltip';
+        tooltip.innerHTML = '<div class="tt-body">' +
+          '<div class="tt-title">' + info.title + '</div>' +
+          '<div class="tt-desc">' + info.desc + '</div>' +
+          '<div class="tt-wiki-link">Click to open Wikipedia \u2197</div>' +
+          '</div>';
+        positionTooltip(event);
+        tooltip.classList.add('tt-visible');
+      });
+      item.addEventListener('mousemove', positionTooltip);
+      item.addEventListener('mouseleave', function() {
+        tooltip.className = 'tooltip';
+      });
+      item.addEventListener('click', function() {
+        window.open('https://en.wikipedia.org/wiki/' + info.wiki, '_blank');
+      });
+    });
+  })();
 </script>
 </body>
 </html>

@@ -4,6 +4,7 @@
 const App = {
   container: document.getElementById('chart-container'),
   showLabels: true,
+  darkMode: false,
   xAxisFormat: 'log',
   yAxisFormat: 'log',
   curT: d3.zoomIdentity,
@@ -13,7 +14,7 @@ const App = {
   Y_DOMAIN: [-58, 68],
   _tooltipStaleAfterZoom: false,
   // Filled during init
-  svg: null, g: null, chartArea: null, zoom: null,
+  svg: null, g: null, chartArea: null, zoom: null, bgRect: null,
   baseX: null, baseY: null,
   xAxisG: null, yAxisG: null, xAxisTopG: null, yAxisRightG: null,
   xLabelBottom: null, xLabelTop: null, yLabelLeft: null, yLabelRight: null,
@@ -39,7 +40,6 @@ function updateAxes(xS, yS) {
   // Build a simple D3 axis-compatible scale wrapper from our potentially warped scale
   function axisScale(warpedFn, domain, range) {
     const s = d3.scaleLinear().domain(domain).range(range);
-    // Override the scale function to use warped positions for tick placement
     const wrapped = Object.assign(v => warpedFn(v), {
       domain: () => domain, range: () => range,
       ticks: (n) => s.ticks(n),
@@ -93,14 +93,15 @@ function updateAxes(xS, yS) {
     App.yAxisRightG.call(d3.axisRight(rS).ticks(15).tickFormat(d => d % 5 === 0 ? d : ''));
   }
   // Update axis title labels
-  App.xLabelBottom.text(App.xAxisFormat === 'linear' ? 'physical radius [cm]' : 'log (physical radius) [cm]');
-  App.xLabelTop.text(App.xAxisFormat === 'linear' ? 'radius [Mpc]' : 'log (radius) [Mpc]');
-  App.yLabelLeft.text(App.yAxisFormat === 'linear' ? 'mass [g]' : 'log (mass) [g]');
-  App.yLabelRight.text(App.yAxisFormat === 'linear' ? 'mass [M\u2609]' : 'log (mass) [M\u2609]');
+  const labelColor = App.darkMode ? '#7888aa' : '#444';
+  App.xLabelBottom.text(App.xAxisFormat === 'linear' ? 'physical radius [cm]' : 'log (physical radius) [cm]').attr('fill', labelColor);
+  App.xLabelTop.text(App.xAxisFormat === 'linear' ? 'radius [Mpc]' : 'log (radius) [Mpc]').attr('fill', labelColor);
+  App.yLabelLeft.text(App.yAxisFormat === 'linear' ? 'mass [g]' : 'log (mass) [g]').attr('fill', labelColor);
+  App.yLabelRight.text(App.yAxisFormat === 'linear' ? 'mass [M\u2609]' : 'log (mass) [M\u2609]').attr('fill', labelColor);
 
-  App.g.selectAll('.tick text').attr('fill','#555').style('font-size','9px');
-  App.g.selectAll('.tick line').attr('stroke','#ccc');
-  App.g.selectAll('.domain').attr('stroke','#999');
+  App.g.selectAll('.tick text').attr('fill', App.darkMode ? '#5a6a90' : '#555').style('font-size','9px');
+  App.g.selectAll('.tick line').attr('stroke', App.darkMode ? '#1e2a50' : '#ccc');
+  App.g.selectAll('.domain').attr('stroke', App.darkMode ? '#2a3660' : '#999');
 }
 
 // ============================================================
@@ -118,13 +119,15 @@ function drawAll(xS, yS) {
 
 function drawBackground(xS, yS) {
   const ca = App.chartArea;
+  const dk = App.darkMode;
+
   // Planckian unknown vertical band (logR < l_planck)
   const plR = log10(l_planck);
   ca.append('rect')
     .attr('x', xS(App.X_DOMAIN[0])).attr('y', yS(App.Y_DOMAIN[1]))
     .attr('width', Math.max(0, xS(plR) - xS(App.X_DOMAIN[0])))
     .attr('height', yS(App.Y_DOMAIN[0]) - yS(App.Y_DOMAIN[1]))
-    .attr('fill', 'rgba(180,170,140,0.15)');
+    .attr('fill', dk ? 'rgba(40,35,20,0.25)' : 'rgba(180,170,140,0.15)');
 
   // Radiation-dominated background (pink tint)
   const radRegion = [
@@ -132,7 +135,7 @@ function drawBackground(xS, yS) {
     [xS(5), yS(App.Y_DOMAIN[0])], [xS(-20), yS(App.Y_DOMAIN[0])],
   ];
   ca.append('polygon').attr('points', radRegion.map(p => p.join(',')).join(' '))
-    .attr('fill', 'rgba(200,140,140,0.06)');
+    .attr('fill', dk ? 'rgba(100,40,40,0.12)' : 'rgba(200,140,140,0.06)');
 
   // Matter-dominated (blue tint)
   const matRegion = [
@@ -140,7 +143,7 @@ function drawBackground(xS, yS) {
     [xS(30), yS(App.Y_DOMAIN[0])], [xS(5), yS(App.Y_DOMAIN[0])],
   ];
   ca.append('polygon').attr('points', matRegion.map(p => p.join(',')).join(' '))
-    .attr('fill', 'rgba(140,160,200,0.06)');
+    .attr('fill', dk ? 'rgba(30,40,100,0.12)' : 'rgba(140,160,200,0.06)');
 
   // Dark energy (grey tint)
   const deRegion = [
@@ -148,11 +151,37 @@ function drawBackground(xS, yS) {
     [xS(App.X_DOMAIN[1]), yS(App.Y_DOMAIN[0])], [xS(30), yS(App.Y_DOMAIN[0])],
   ];
   ca.append('polygon').attr('points', deRegion.map(p => p.join(',')).join(' '))
-    .attr('fill', 'rgba(180,180,180,0.06)');
+    .attr('fill', dk ? 'rgba(50,50,70,0.1)' : 'rgba(180,180,180,0.06)');
+
+  // Starfield (dark mode only)
+  if (dk) {
+    for (let i = 0; i < 300; i++) {
+      const sx = ((i * 7919 + 104729) % 10000) / 10000 * App.width;
+      const sy = ((i * 6271 + 83047) % 10000) / 10000 * App.height;
+      const sr = 0.3 + ((i * 3571) % 100) / 100 * 1.0;
+      const so = 0.08 + ((i * 4793) % 100) / 100 * 0.3;
+      ca.append('circle')
+        .attr('cx', sx).attr('cy', sy).attr('r', sr)
+        .attr('fill', `rgba(180,200,255,${so})`)
+        .attr('pointer-events', 'none');
+    }
+    // A few brighter stars
+    for (let i = 0; i < 15; i++) {
+      const sx = ((i * 13397 + 7549) % 10000) / 10000 * App.width;
+      const sy = ((i * 11239 + 4517) % 10000) / 10000 * App.height;
+      const sr = 1.0 + ((i * 2671) % 100) / 100 * 0.6;
+      ca.append('circle')
+        .attr('cx', sx).attr('cy', sy).attr('r', sr)
+        .attr('fill', 'rgba(220,230,255,0.5)')
+        .attr('pointer-events', 'none');
+    }
+  }
 }
 
 function drawForbidden(xS, yS) {
   const ca = App.chartArea;
+  const dk = App.darkMode;
+
   // BH line: logM = logR - BH_const
   // Forbidden by gravity: ABOVE the BH line
   const bhPts = [];
@@ -165,7 +194,7 @@ function drawForbidden(xS, yS) {
     [xS(App.X_DOMAIN[0]), yS(App.Y_DOMAIN[1])],
   ];
   ca.append('polygon').attr('points', gravPoly.map(p => p.join(',')).join(' '))
-    .attr('fill', 'rgba(180,100,100,0.18)');
+    .attr('fill', dk ? 'rgba(150,50,50,0.14)' : 'rgba(180,100,100,0.18)');
 
   // Compton line: logM = -logR + C_const
   // Forbidden by quantum uncertainty: BELOW the Compton line
@@ -179,7 +208,7 @@ function drawForbidden(xS, yS) {
     [xS(App.X_DOMAIN[0]), yS(App.Y_DOMAIN[0])],
   ];
   ca.append('polygon').attr('points', qPoly.map(p => p.join(',')).join(' '))
-    .attr('fill', 'rgba(160,120,100,0.15)');
+    .attr('fill', dk ? 'rgba(120,80,50,0.12)' : 'rgba(160,120,100,0.15)');
 
   // QG doubly-forbidden region
   const instLR = log10(l_planck);
@@ -191,31 +220,40 @@ function drawForbidden(xS, yS) {
 
   if (qgPts.length > 2) {
     ca.append('polygon').attr('points', qgPts.map(p => p.join(',')).join(' '))
-      .attr('fill', 'rgba(100,60,100,0.2)');
+      .attr('fill', dk ? 'rgba(80,40,120,0.18)' : 'rgba(100,60,100,0.2)');
   }
 
   // Region labels
   if (App.showLabels) {
-    const addLabel = (text, lx, ly, rot, fill, size) => {
+    const addLabel = (text, lx, ly, rot, fillLight, fillDark, size) => {
       ca.append('text')
         .attr('x', xS(lx)).attr('y', yS(ly))
-        .attr('fill', fill).style('font-size', size+'px').style('font-weight','700')
+        .attr('fill', dk ? fillDark : fillLight)
+        .style('font-size', size+'px').style('font-weight','700')
         .style('font-style','italic')
         .attr('text-anchor','middle')
         .attr('transform', `rotate(${rot}, ${xS(lx)}, ${yS(ly)})`)
         .text(text);
     };
-    addLabel('forbidden by gravity', -8, 45, -32, 'rgba(160,80,80,0.4)', 16);
-    addLabel('quantum uncertainty', 8, -38, 32, 'rgba(140,100,80,0.35)', 16);
-    addLabel('Compton limit', -8, -22, 40, 'rgba(140,100,80,0.4)', 11);
-    addLabel('sub \u2013 Planckian unknown', -37, 10, -90, 'rgba(150,140,100,0.4)', 12);
-    addLabel('QG', -36.5, -5, 0, 'rgba(140,80,160,0.5)', 11);
-    addLabel('black holes', -8, 18, -40, 'rgba(80,60,60,0.5)', 12);
+    addLabel('forbidden by gravity', -8, 45, -32,
+      'rgba(160,80,80,0.4)', 'rgba(200,100,100,0.3)', 16);
+    addLabel('quantum uncertainty', 8, -38, 32,
+      'rgba(140,100,80,0.35)', 'rgba(180,140,100,0.25)', 16);
+    addLabel('Compton limit', -8, -22, 40,
+      'rgba(140,100,80,0.4)', 'rgba(180,140,100,0.3)', 11);
+    addLabel('sub \u2013 Planckian unknown', -37, 10, -90,
+      'rgba(150,140,100,0.4)', 'rgba(180,160,100,0.3)', 12);
+    addLabel('QG', -36.5, -5, 0,
+      'rgba(140,80,160,0.5)', 'rgba(160,100,200,0.4)', 11);
+    addLabel('black holes', -8, 18, -40,
+      'rgba(80,60,60,0.5)', 'rgba(180,150,150,0.35)', 12);
   }
 }
 
 function drawIsodensity(xS, yS) {
   const ca = App.chartArea;
+  const dk = App.darkMode;
+
   isodensityLines.forEach(iso => {
     const intercept = Math.log10(4 * Math.PI / 3) + iso.logRho;
     const pts = [];
@@ -229,14 +267,16 @@ function drawIsodensity(xS, yS) {
     const line = pts.map(p => [xS(p[0]), yS(p[1])]);
     ca.append('polyline')
       .attr('points', line.map(p => p.join(',')).join(' '))
-      .attr('fill','none').attr('stroke','rgba(255,255,255,0.6)')
+      .attr('fill','none')
+      .attr('stroke', dk ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)')
       .attr('stroke-width', 1).attr('stroke-dasharray','6,4');
 
     if (App.showLabels) {
       const lp = pts[pts.length - 1];
       const labelText = ca.append('text')
         .attr('x', xS(lp[0]) - 2).attr('y', yS(lp[1]) + 3)
-        .attr('fill','rgba(100,90,80,0.6)').style('font-size','8px')
+        .attr('fill', dk ? 'rgba(160,150,140,0.5)' : 'rgba(100,90,80,0.6)')
+        .style('font-size','8px')
         .attr('text-anchor','end')
         .attr('transform', `rotate(-72, ${xS(lp[0])-2}, ${yS(lp[1])+3})`)
         .text(iso.label);
@@ -247,7 +287,8 @@ function drawIsodensity(xS, yS) {
         const mp = pts[Math.floor(pts.length * 0.4)];
         const tagText = ca.append('text')
           .attr('x', xS(mp[0])).attr('y', yS(mp[1]) - 6)
-          .attr('fill','rgba(100,90,80,0.5)').style('font-size','8px').style('font-style','italic')
+          .attr('fill', dk ? 'rgba(160,150,140,0.4)' : 'rgba(100,90,80,0.5)')
+          .style('font-size','8px').style('font-style','italic')
           .attr('text-anchor','middle')
           .attr('transform', `rotate(-72, ${xS(mp[0])}, ${yS(mp[1])-6})`)
           .text(iso.tag);
@@ -260,6 +301,8 @@ function drawIsodensity(xS, yS) {
 
 function drawBoundaries(xS, yS) {
   const ca = App.chartArea;
+  const dk = App.darkMode;
+
   // Black hole line
   const bhPts = [];
   for (let lr = App.X_DOMAIN[0]; lr <= App.X_DOMAIN[1]; lr += 0.5) {
@@ -268,7 +311,9 @@ function drawBoundaries(xS, yS) {
       bhPts.push([xS(lr), yS(lm)]);
   }
   ca.append('polyline').attr('points', bhPts.map(p => p.join(',')).join(' '))
-    .attr('fill','none').attr('stroke','#444').attr('stroke-width', 2);
+    .attr('fill','none')
+    .attr('stroke', dk ? 'rgba(255,180,180,0.45)' : '#444')
+    .attr('stroke-width', 2);
 
   // Compton line
   const cPts = [];
@@ -278,36 +323,43 @@ function drawBoundaries(xS, yS) {
       cPts.push([xS(lr), yS(lm)]);
   }
   ca.append('polyline').attr('points', cPts.map(p => p.join(',')).join(' '))
-    .attr('fill','none').attr('stroke','#666').attr('stroke-width', 2);
+    .attr('fill','none')
+    .attr('stroke', dk ? 'rgba(180,200,255,0.35)' : '#666')
+    .attr('stroke-width', 2);
 
   // Planck mass horizontal dashed
   const pmLM = log10(m_planck);
   ca.append('line')
     .attr('x1', xS(App.X_DOMAIN[0])).attr('x2', xS(App.X_DOMAIN[1]))
     .attr('y1', yS(pmLM)).attr('y2', yS(pmLM))
-    .attr('stroke','rgba(0,0,0,0.12)').attr('stroke-dasharray','4,4').attr('stroke-width',1);
+    .attr('stroke', dk ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.12)')
+    .attr('stroke-dasharray','4,4').attr('stroke-width',1);
 
   // Planck length vertical dashed
   const plLR = log10(l_planck);
   ca.append('line')
     .attr('x1', xS(plLR)).attr('x2', xS(plLR))
     .attr('y1', yS(App.Y_DOMAIN[0])).attr('y2', yS(App.Y_DOMAIN[1]))
-    .attr('stroke','rgba(0,0,0,0.12)').attr('stroke-dasharray','4,4').attr('stroke-width',1);
+    .attr('stroke', dk ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.12)')
+    .attr('stroke-dasharray','4,4').attr('stroke-width',1);
 
   if (App.showLabels) {
     ca.append('text')
       .attr('x', xS(App.X_DOMAIN[0]) + 4).attr('y', yS(pmLM) - 3)
-      .attr('fill','rgba(0,0,0,0.3)').style('font-size','9px').style('font-style','italic')
+      .attr('fill', dk ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.3)')
+      .style('font-size','9px').style('font-style','italic')
       .text('m_P');
     ca.append('text')
       .attr('x', xS(plLR) + 3).attr('y', yS(App.Y_DOMAIN[0]) + 12)
-      .attr('fill','rgba(0,0,0,0.3)').style('font-size','9px').style('font-style','italic')
+      .attr('fill', dk ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.3)')
+      .style('font-size','9px').style('font-style','italic')
       .text('l_P');
   }
 }
 
 function drawSpecialAnnotations(xS, yS) {
   const ca = App.chartArea;
+  const dk = App.darkMode;
   if (!App.showLabels) return;
 
   const energyLabels = [
@@ -331,10 +383,12 @@ function drawSpecialAnnotations(xS, yS) {
       ca.append('line')
         .attr('x1', xS(App.X_DOMAIN[1]) - 30).attr('x2', xS(App.X_DOMAIN[1]))
         .attr('y1', yy).attr('y2', yy)
-        .attr('stroke', '#c44').attr('stroke-width', 1).attr('stroke-dasharray', '2,2');
+        .attr('stroke', dk ? '#664444' : '#c44')
+        .attr('stroke-width', 1).attr('stroke-dasharray', '2,2');
       const labelText = ca.append('text')
         .attr('x', xS(App.X_DOMAIN[1]) - 2).attr('y', yy - 4)
-        .attr('fill', '#c44').style('font-size', '9px').style('font-weight','600')
+        .attr('fill', dk ? '#cc7766' : '#c44')
+        .style('font-size', '9px').style('font-weight','600')
         .attr('text-anchor', 'end')
         .text(e.label);
       addEraTooltip(labelText, e.label, e.desc, e.wiki);
@@ -348,13 +402,15 @@ function drawSpecialAnnotations(xS, yS) {
     .attr('x', xS(rectX1)).attr('y', yS(rectY2))
     .attr('width', xS(rectX2) - xS(rectX1))
     .attr('height', yS(rectY1) - yS(rectY2))
-    .attr('fill', 'none').attr('stroke', 'rgba(0,100,0,0.4)')
+    .attr('fill', 'none')
+    .attr('stroke', dk ? 'rgba(50,180,50,0.3)' : 'rgba(0,100,0,0.4)')
     .attr('stroke-width', 1.5).attr('stroke-dasharray', '4,3');
 }
 
 function drawObjects(xS, yS) {
   const tooltip = d3.select('#tooltip');
   const ca = App.chartArea;
+  const dk = App.darkMode;
 
   objects.forEach(obj => {
     const cx = xS(obj.logR), cy = yS(obj.logM);
@@ -370,23 +426,27 @@ function drawObjects(xS, yS) {
     gr.append('circle')
       .attr('cx', cx).attr('cy', cy).attr('r', r)
       .attr('fill', isBH ? '#111' : col)
-      .attr('stroke', isPlanck ? '#cc9900' : (isBH ? '#c44' : d3.color(col).darker(0.5)))
-      .attr('stroke-width', isPlanck ? 2.5 : 1.5)
+      .attr('stroke', isPlanck ? '#cc9900' : (isBH ? '#c44' : d3.color(col).darker(dk ? -0.3 : 0.5)))
+      .attr('stroke-width', isPlanck ? 2.5 : (isBH && dk ? 2 : 1.5))
       .attr('opacity', 0.9);
 
     if (App.showLabels) {
       let dx = 9, dy = -5, anchor = 'start';
-      if (obj.name.includes('Hubble')) { dx = -9; anchor = 'end'; }
-      if (obj.name.includes('Ton')) { dx = 9; dy = 12; }
-      if (obj.name.includes('Sgr')) { dx = -9; dy = -2; anchor = 'end'; }
-      if (obj.cat === 'particle') { dx = 6; dy = 10; }
-      if (obj.name.includes('Instanton')) { dx = -8; dy = 10; anchor = 'end'; }
-      if (obj.name.includes('3K')) { dx = -9; anchor = 'end'; }
+      // Smart positioning: above on Compton line, below on BH line
+      if (obj.cat === 'particle') { dx = 6; dy = -8; }
+      else if (obj.cat === 'blackhole') { dy = 14; }
+      // Object-specific overrides
+      if (obj.name.includes('Hubble')) { dx = -9; dy = 14; anchor = 'end'; }
+      if (obj.name.includes('Ton')) { dx = 9; dy = 14; }
+      if (obj.name.includes('Sgr')) { dx = -9; dy = 14; anchor = 'end'; }
+      if (obj.name.includes('Instanton')) { dx = -8; dy = 14; anchor = 'end'; }
+      if (obj.name.includes('3K')) { dx = -9; dy = 14; anchor = 'end'; }
       if (obj.name.includes('Red giant')) { dx = 9; dy = 2; }
 
       gr.append('text')
         .attr('x', cx + dx).attr('y', cy + dy)
-        .attr('fill','#333').style('font-size','9px')
+        .attr('fill', dk ? 'rgba(210,220,240,0.85)' : '#333')
+        .style('font-size','10px')
         .attr('text-anchor', anchor)
         .text(obj.name);
     }
@@ -435,7 +495,7 @@ function drawObjects(xS, yS) {
       d3.select(this).append('circle')
         .attr('class', 'hover-ring')
         .attr('cx', cx).attr('cy', cy)
-        .attr('stroke', col);
+        .attr('stroke', dk && isBH ? '#c44' : col);
 
       d3.select(this).select('circle').attr('r', r + 3).attr('stroke-width', 3).attr('filter','url(#glow)');
     })
@@ -443,7 +503,7 @@ function drawObjects(xS, yS) {
     .on('mouseout', function() {
       tooltip.node().className = 'tooltip';
       d3.select(this).selectAll('.hover-ring').remove();
-      d3.select(this).select('circle').attr('r', r).attr('stroke-width', isPlanck ? 2.5 : 1.5).attr('filter', null);
+      d3.select(this).select('circle').attr('r', r).attr('stroke-width', isPlanck ? 2.5 : (isBH && dk ? 2 : 1.5)).attr('filter', null);
     })
     .on('click', function() {
       const wd = wikiData[obj.name];
@@ -478,8 +538,8 @@ function currentScales() {
   return [xS, yS];
 }
 
-// Compute a warped position for a log-value given a warp factor t ∈ [0,1]
-// t=0 → pure log (uniform spacing), t=1 → pure linear (exponential spacing)
+// Compute a warped position for a log-value given a warp factor t \u2208 [0,1]
+// t=0 \u2192 pure log (uniform spacing), t=1 \u2192 pure linear (exponential spacing)
 function warpedPos(logVal, domain, range, t) {
   // Log position (uniform)
   const logFrac = (logVal - domain[0]) / (domain[1] - domain[0]);
@@ -573,7 +633,7 @@ function showScaleAnnotation() {
     .attr('class', 'scale-annotation')
     .attr('x', App.width / 2).attr('y', App.height / 2 - 20)
     .attr('text-anchor', 'middle')
-    .attr('fill', 'rgba(180,50,50,0.5)')
+    .attr('fill', App.darkMode ? 'rgba(200,150,150,0.5)' : 'rgba(180,50,50,0.5)')
     .style('font-size', '14px').style('font-style', 'italic')
     .style('pointer-events', 'none')
     .attr('opacity', 0)
@@ -588,6 +648,10 @@ function showScaleAnnotation() {
 // ============================================================
 function initChart() {
   getDims();
+
+  // Load dark mode preference
+  App.darkMode = localStorage.getItem('allObjects_darkMode') === 'true';
+  if (App.darkMode) document.body.classList.add('dark-mode');
 
   App.svg = d3.select('#chart-container').append('svg')
     .attr('width', App.W).attr('height', App.H);
@@ -606,7 +670,9 @@ function initChart() {
   App.g = App.svg.append('g').attr('transform', `translate(${App.margin.left},${App.margin.top})`);
 
   // Background
-  App.g.append('rect').attr('width', App.width).attr('height', App.height).attr('fill','#faf5f0');
+  App.bgRect = App.g.append('rect')
+    .attr('width', App.width).attr('height', App.height)
+    .attr('fill', App.darkMode ? '#080c18' : '#faf5f0');
 
   App.chartArea = App.g.append('g').attr('clip-path','url(#clip)');
 
@@ -681,6 +747,22 @@ function initChart() {
     drawAll(xS, yS);
   };
 
+  // Dark mode toggle
+  const dmBtn = document.getElementById('darkModeToggle');
+  if (dmBtn) {
+    dmBtn.textContent = App.darkMode ? 'Light Mode' : 'Dark Mode';
+    dmBtn.onclick = () => {
+      App.darkMode = !App.darkMode;
+      localStorage.setItem('allObjects_darkMode', App.darkMode);
+      document.body.classList.toggle('dark-mode', App.darkMode);
+      dmBtn.textContent = App.darkMode ? 'Light Mode' : 'Dark Mode';
+      App.bgRect.attr('fill', App.darkMode ? '#080c18' : '#faf5f0');
+      const [xS, yS] = currentScales();
+      updateAxes(xS, yS);
+      drawAll(xS, yS);
+    };
+  }
+
   document.getElementById('closeDetail').onclick = () => {
     document.getElementById('detailPanel').style.display = 'none';
   };
@@ -693,7 +775,7 @@ function initChart() {
     getDims();
     App.svg.attr('width', App.W).attr('height', App.H);
     d3.select('#clip rect').attr('width', App.width).attr('height', App.height);
-    App.g.select('rect').attr('width', App.width).attr('height', App.height);
+    App.bgRect.attr('width', App.width).attr('height', App.height);
     App.xAxisG.attr('transform', `translate(0,${App.height})`);
     App.yAxisRightG.attr('transform', `translate(${App.width},0)`);
     App.baseX = makeX(); App.baseY = makeY();
