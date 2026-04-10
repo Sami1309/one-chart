@@ -4,7 +4,7 @@
 const App = {
   container: document.getElementById('chart-container'),
   showLabels: true,
-  darkMode: false,
+  darkMode: true,
   xAxisFormat: 'log',
   yAxisFormat: 'log',
   curT: d3.zoomIdentity,
@@ -20,6 +20,10 @@ const App = {
   xAxisG: null, yAxisG: null, xAxisTopG: null, yAxisRightG: null,
   xLabelBottom: null, xLabelTop: null, yLabelLeft: null, yLabelRight: null,
 };
+
+// Extended draw extents — ensures backgrounds/regions fill at any zoom level
+const DRAW_X = [-100, 120];
+const DRAW_Y = [-120, 130];
 
 // ============================================================
 // ZOOM-DEPENDENT LABEL GROUPS
@@ -140,31 +144,31 @@ function drawBackground(xS, yS) {
   // Planckian unknown vertical band (logR < l_planck)
   const plR = log10(l_planck);
   ca.append('rect')
-    .attr('x', xS(App.X_DOMAIN[0])).attr('y', yS(App.Y_DOMAIN[1]))
-    .attr('width', Math.max(0, xS(plR) - xS(App.X_DOMAIN[0])))
-    .attr('height', yS(App.Y_DOMAIN[0]) - yS(App.Y_DOMAIN[1]))
+    .attr('x', xS(DRAW_X[0])).attr('y', yS(DRAW_Y[1]))
+    .attr('width', Math.max(0, xS(plR) - xS(DRAW_X[0])))
+    .attr('height', yS(DRAW_Y[0]) - yS(DRAW_Y[1]))
     .attr('fill', dk ? 'rgba(40,35,20,0.25)' : 'rgba(180,170,140,0.15)');
 
   // Radiation-dominated background (pink tint)
   const radRegion = [
-    [xS(-20), yS(App.Y_DOMAIN[1])], [xS(5), yS(App.Y_DOMAIN[1])],
-    [xS(5), yS(App.Y_DOMAIN[0])], [xS(-20), yS(App.Y_DOMAIN[0])],
+    [xS(-20), yS(DRAW_Y[1])], [xS(5), yS(DRAW_Y[1])],
+    [xS(5), yS(DRAW_Y[0])], [xS(-20), yS(DRAW_Y[0])],
   ];
   ca.append('polygon').attr('points', radRegion.map(p => p.join(',')).join(' '))
     .attr('fill', dk ? 'rgba(100,40,40,0.12)' : 'rgba(200,140,140,0.06)');
 
   // Matter-dominated (blue tint)
   const matRegion = [
-    [xS(5), yS(App.Y_DOMAIN[1])], [xS(30), yS(App.Y_DOMAIN[1])],
-    [xS(30), yS(App.Y_DOMAIN[0])], [xS(5), yS(App.Y_DOMAIN[0])],
+    [xS(5), yS(DRAW_Y[1])], [xS(30), yS(DRAW_Y[1])],
+    [xS(30), yS(DRAW_Y[0])], [xS(5), yS(DRAW_Y[0])],
   ];
   ca.append('polygon').attr('points', matRegion.map(p => p.join(',')).join(' '))
     .attr('fill', dk ? 'rgba(30,40,100,0.12)' : 'rgba(140,160,200,0.06)');
 
   // Dark energy (grey tint)
   const deRegion = [
-    [xS(30), yS(App.Y_DOMAIN[1])], [xS(App.X_DOMAIN[1]), yS(App.Y_DOMAIN[1])],
-    [xS(App.X_DOMAIN[1]), yS(App.Y_DOMAIN[0])], [xS(30), yS(App.Y_DOMAIN[0])],
+    [xS(30), yS(DRAW_Y[1])], [xS(DRAW_X[1]), yS(DRAW_Y[1])],
+    [xS(DRAW_X[1]), yS(DRAW_Y[0])], [xS(30), yS(DRAW_Y[0])],
   ];
   ca.append('polygon').attr('points', deRegion.map(p => p.join(',')).join(' '))
     .attr('fill', dk ? 'rgba(50,50,70,0.1)' : 'rgba(180,180,180,0.06)');
@@ -201,13 +205,13 @@ function drawForbidden(xS, yS) {
   // BH line: logM = logR - BH_const
   // Forbidden by gravity: ABOVE the BH line
   const bhPts = [];
-  for (let lr = App.X_DOMAIN[0]; lr <= App.X_DOMAIN[1]; lr += 0.5)
+  for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 0.5)
     bhPts.push([xS(lr), yS(lr - BH_const)]);
 
   const gravPoly = [
     ...bhPts,
-    [xS(App.X_DOMAIN[1]), yS(App.Y_DOMAIN[1])],
-    [xS(App.X_DOMAIN[0]), yS(App.Y_DOMAIN[1])],
+    [xS(DRAW_X[1]), yS(DRAW_Y[1])],
+    [xS(DRAW_X[0]), yS(DRAW_Y[1])],
   ];
   ca.append('polygon').attr('points', gravPoly.map(p => p.join(',')).join(' '))
     .attr('fill', dk ? 'rgba(150,50,50,0.14)' : 'rgba(180,100,100,0.18)');
@@ -215,13 +219,13 @@ function drawForbidden(xS, yS) {
   // Compton line: logM = -logR + C_const
   // Forbidden by quantum uncertainty: BELOW the Compton line
   const cPts = [];
-  for (let lr = App.X_DOMAIN[0]; lr <= App.X_DOMAIN[1]; lr += 0.5)
+  for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 0.5)
     cPts.push([xS(lr), yS(-lr + C_const)]);
 
   const qPoly = [
     ...cPts,
-    [xS(App.X_DOMAIN[1]), yS(App.Y_DOMAIN[0])],
-    [xS(App.X_DOMAIN[0]), yS(App.Y_DOMAIN[0])],
+    [xS(DRAW_X[1]), yS(DRAW_Y[0])],
+    [xS(DRAW_X[0]), yS(DRAW_Y[0])],
   ];
   ca.append('polygon').attr('points', qPoly.map(p => p.join(',')).join(' '))
     .attr('fill', dk ? 'rgba(120,80,50,0.12)' : 'rgba(160,120,100,0.15)');
@@ -229,9 +233,9 @@ function drawForbidden(xS, yS) {
   // QG doubly-forbidden region
   const instLR = log10(l_planck);
   const qgPts = [];
-  for (let lr = App.X_DOMAIN[0]; lr <= instLR; lr += 0.3)
+  for (let lr = DRAW_X[0]; lr <= instLR; lr += 0.3)
     qgPts.push([xS(lr), yS(lr - BH_const)]);
-  for (let lr = instLR; lr >= App.X_DOMAIN[0]; lr -= 0.3)
+  for (let lr = instLR; lr >= DRAW_X[0]; lr -= 0.3)
     qgPts.push([xS(lr), yS(-lr + C_const)]);
 
   if (qgPts.length > 2) {
@@ -241,8 +245,14 @@ function drawForbidden(xS, yS) {
 
   // Region labels
   if (App.showLabels) {
+    // Compute screen angles parallel to boundary lines
+    const unitDx = xS(1) - xS(0);
+    const unitDyUp = yS(1) - yS(0); // negative (higher mass = up on screen)
+    const bhAngle = Math.atan2(unitDyUp, unitDx) * 180 / Math.PI; // BH line slope +1
+    const cAngle = Math.atan2(-unitDyUp, unitDx) * 180 / Math.PI; // Compton line slope -1
+
     const addLabel = (text, lx, ly, rot, fillLight, fillDark, size) => {
-      ca.append('text')
+      return ca.append('text')
         .attr('x', xS(lx)).attr('y', yS(ly))
         .attr('fill', dk ? fillDark : fillLight)
         .style('font-size', size+'px').style('font-weight','700')
@@ -251,17 +261,25 @@ function drawForbidden(xS, yS) {
         .attr('transform', `rotate(${rot}, ${xS(lx)}, ${yS(ly)})`)
         .text(text);
     };
-    addLabel('forbidden by gravity', -8, 45, -32,
+    const gravLabel = addLabel('forbidden by gravity', -8, 45, bhAngle,
       'rgba(160,80,80,0.4)', 'rgba(200,100,100,0.3)', 16);
-    addLabel('quantum uncertainty', 8, -38, 32,
+    addEraTooltip(gravLabel,
+      'Forbidden by Gravity',
+      'The region above the Schwarzschild line (r = 2Gm/c\u00B2) is forbidden by general relativity. Any object compressed below its Schwarzschild radius collapses into a black hole. No stable structure can exist in this region.',
+      'Schwarzschild_radius');
+    const quantLabel = addLabel('quantum uncertainty', 8, -38, cAngle,
       'rgba(140,100,80,0.35)', 'rgba(180,140,100,0.25)', 16);
-    addLabel('Compton limit', -8, -22, 40,
+    addEraTooltip(quantLabel,
+      'Quantum Uncertainty',
+      'The region below the Compton line (\u03BB = \u0127/mc) is forbidden by quantum mechanics. Confining a particle below its Compton wavelength provides enough energy to create particle\u2013antiparticle pairs, preventing further localization.',
+      'Compton_wavelength');
+    addLabel('Compton limit', -8, -22, cAngle,
       'rgba(140,100,80,0.4)', 'rgba(180,140,100,0.3)', 11);
     addLabel('sub \u2013 Planckian unknown', -37, 10, -90,
       'rgba(150,140,100,0.4)', 'rgba(180,160,100,0.3)', 12);
     addLabel('QG', -36.5, -5, 0,
       'rgba(140,80,160,0.5)', 'rgba(160,100,200,0.4)', 11);
-    addLabel('black holes', -8, 18, -40,
+    addLabel('black holes', -8, 18, bhAngle,
       'rgba(80,60,60,0.5)', 'rgba(180,150,150,0.35)', 12);
   }
 }
@@ -273,9 +291,9 @@ function drawIsodensity(xS, yS) {
   isodensityLines.forEach(iso => {
     const intercept = Math.log10(4 * Math.PI / 3) + iso.logRho;
     const pts = [];
-    for (let lr = App.X_DOMAIN[0]; lr <= App.X_DOMAIN[1]; lr += 1) {
+    for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 1) {
       const lm = 3 * lr + intercept;
-      if (lm >= App.Y_DOMAIN[0] && lm <= App.Y_DOMAIN[1])
+      if (lm >= DRAW_Y[0] && lm <= DRAW_Y[1])
         pts.push([lr, lm]);
     }
     if (pts.length < 2) return;
@@ -321,9 +339,9 @@ function drawBoundaries(xS, yS) {
 
   // Black hole line
   const bhPts = [];
-  for (let lr = App.X_DOMAIN[0]; lr <= App.X_DOMAIN[1]; lr += 0.5) {
+  for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 0.5) {
     const lm = lr - BH_const;
-    if (lm >= App.Y_DOMAIN[0] && lm <= App.Y_DOMAIN[1])
+    if (lm >= DRAW_Y[0] && lm <= DRAW_Y[1])
       bhPts.push([xS(lr), yS(lm)]);
   }
   ca.append('polyline').attr('points', bhPts.map(p => p.join(',')).join(' '))
@@ -333,9 +351,9 @@ function drawBoundaries(xS, yS) {
 
   // Compton line
   const cPts = [];
-  for (let lr = App.X_DOMAIN[0]; lr <= App.X_DOMAIN[1]; lr += 0.5) {
+  for (let lr = DRAW_X[0]; lr <= DRAW_X[1]; lr += 0.5) {
     const lm = -lr + C_const;
-    if (lm >= App.Y_DOMAIN[0] && lm <= App.Y_DOMAIN[1])
+    if (lm >= DRAW_Y[0] && lm <= DRAW_Y[1])
       cPts.push([xS(lr), yS(lm)]);
   }
   ca.append('polyline').attr('points', cPts.map(p => p.join(',')).join(' '))
@@ -346,7 +364,7 @@ function drawBoundaries(xS, yS) {
   // Planck mass horizontal dashed
   const pmLM = log10(m_planck);
   ca.append('line')
-    .attr('x1', xS(App.X_DOMAIN[0])).attr('x2', xS(App.X_DOMAIN[1]))
+    .attr('x1', xS(DRAW_X[0])).attr('x2', xS(DRAW_X[1]))
     .attr('y1', yS(pmLM)).attr('y2', yS(pmLM))
     .attr('stroke', dk ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.12)')
     .attr('stroke-dasharray','4,4').attr('stroke-width',1);
@@ -355,7 +373,7 @@ function drawBoundaries(xS, yS) {
   const plLR = log10(l_planck);
   ca.append('line')
     .attr('x1', xS(plLR)).attr('x2', xS(plLR))
-    .attr('y1', yS(App.Y_DOMAIN[0])).attr('y2', yS(App.Y_DOMAIN[1]))
+    .attr('y1', yS(DRAW_Y[0])).attr('y2', yS(DRAW_Y[1]))
     .attr('stroke', dk ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.12)')
     .attr('stroke-dasharray','4,4').attr('stroke-width',1);
 
@@ -396,16 +414,22 @@ function drawSpecialAnnotations(xS, yS) {
   energyLabels.forEach(e => {
     const yy = yS(e.y);
     if (yy > 0 && yy < App.height) {
+      // Small tick mark at right axis (always visible)
       ca.append('line')
-        .attr('x1', xS(App.X_DOMAIN[1]) - 30).attr('x2', xS(App.X_DOMAIN[1]))
+        .attr('x1', App.width - 6).attr('x2', App.width)
         .attr('y1', yy).attr('y2', yy)
-        .attr('stroke', dk ? '#664444' : '#c44')
-        .attr('stroke-width', 1).attr('stroke-dasharray', '2,2');
+        .attr('stroke', dk ? 'rgba(102,68,68,0.6)' : '#c44')
+        .attr('stroke-width', 1);
+      // Label (proximity-triggered near right axis)
       const labelText = ca.append('text')
-        .attr('x', xS(App.X_DOMAIN[1]) - 2).attr('y', yy - 4)
+        .attr('class', 'energy-prox-label')
+        .datum({ yPos: yy })
+        .attr('x', App.width - 10).attr('y', yy + 3)
         .attr('fill', dk ? '#cc7766' : '#c44')
         .style('font-size', '9px').style('font-weight','600')
         .attr('text-anchor', 'end')
+        .style('opacity', 0)
+        .style('transition', 'opacity 0.15s ease')
         .text(e.label);
       addEraTooltip(labelText, e.label, e.desc, e.wiki);
     }
@@ -454,6 +478,10 @@ function drawObjects(xS, yS) {
     if (App.showLabels) {
       let dx = 9, dy = -5, anchor = 'start';
       if (obj.cat === 'particle') { dx = 6; dy = -8; }
+      if (obj.name === 'Neutron (n)') { dx = -6; dy = 16; anchor = 'end'; }
+      if (obj.name === 'W\u00B1') { dx = -8; dy = -4; anchor = 'end'; }
+      if (obj.name === 'Top quark (t)') { dx = 6; dy = 16; }
+      if (obj.name.includes('Neutrinos')) { dx = 8; dy = -14; }
       else if (obj.cat === 'blackhole') { dy = 14; }
       if (obj.name.includes('Hubble')) { dx = -9; dy = 14; anchor = 'end'; }
       if (obj.name.includes('Ton')) { dx = 9; dy = 14; }
@@ -551,6 +579,16 @@ function applyLabelProximity() {
     // pw = proximity weight (1 when zoomed out, 0 when zoomed in)
     // bo = base opacity (0 when zoomed out, 1 when zoomed in)
     const opacity = (1 - d.pw) * d.bo + d.pw * prox;
+    d3.select(this).style('opacity', opacity);
+  });
+
+  // Energy labels: show when cursor is near the right axis
+  const rightDist = Math.abs(mx - App.width);
+  App.chartArea.selectAll('.energy-prox-label').each(function(d) {
+    if (!d) return;
+    const yDist = Math.abs(my - d.yPos);
+    const dist = Math.sqrt(rightDist * rightDist + yDist * yDist);
+    const opacity = rightDist < 100 ? Math.max(0, Math.min(1, 1 - dist / 200)) : 0;
     d3.select(this).style('opacity', opacity);
   });
 }
@@ -692,10 +730,6 @@ function showScaleAnnotation() {
 function initChart() {
   getDims();
 
-  // Load dark mode preference
-  App.darkMode = localStorage.getItem('allObjects_darkMode') === 'true';
-  if (App.darkMode) document.body.classList.add('dark-mode');
-
   App.svg = d3.select('#chart-container').append('svg')
     .attr('width', App.W).attr('height', App.H);
 
@@ -802,22 +836,6 @@ function initChart() {
     const [xS, yS] = currentScales();
     drawAll(xS, yS);
   };
-
-  // Dark mode toggle
-  const dmBtn = document.getElementById('darkModeToggle');
-  if (dmBtn) {
-    dmBtn.textContent = App.darkMode ? 'Light Mode' : 'Dark Mode';
-    dmBtn.onclick = () => {
-      App.darkMode = !App.darkMode;
-      localStorage.setItem('allObjects_darkMode', App.darkMode);
-      document.body.classList.toggle('dark-mode', App.darkMode);
-      dmBtn.textContent = App.darkMode ? 'Light Mode' : 'Dark Mode';
-      App.bgRect.attr('fill', App.darkMode ? '#080c18' : '#faf5f0');
-      const [xS, yS] = currentScales();
-      updateAxes(xS, yS);
-      drawAll(xS, yS);
-    };
-  }
 
   document.getElementById('closeDetail').onclick = () => {
     document.getElementById('detailPanel').style.display = 'none';

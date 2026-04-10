@@ -19,8 +19,8 @@ function initKeyboard() {
     // Don't capture when typing in inputs
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
     // Don't capture when slideshow is open
-    const overlay = document.getElementById('slideshow-overlay');
-    if (overlay && overlay.style.display !== 'none') return;
+    const modal = document.getElementById('info-modal');
+    if (modal && modal.style.display !== 'none') return;
 
     const PAN_STEP = 50;
     const ZOOM_FACTOR = 1.3;
@@ -200,8 +200,7 @@ function initDeepLinks() {
         const [x0, x1] = x.split(',').map(Number);
         const [y0, y1] = y.split(',').map(Number);
         if (!isNaN(x0) && !isNaN(x1) && !isNaN(y0) && !isNaN(y1)) {
-          // Delay to let chart initialize
-          setTimeout(() => zoomToRegion(x0, x1, y0, y1, 800), 100);
+          zoomToRegion(x0, x1, y0, y1, 0);
         }
       }
     } catch (e) { /* ignore bad hashes */ }

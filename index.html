@@ -154,7 +154,7 @@
   body.dark-mode #help-overlay .text-xs { color: #4a5a80; }
 </style>
 </head>
-<body class="bg-cream text-gray-900 overflow-hidden h-screen font-['Helvetica_Neue',Arial,sans-serif]">
+<body class="bg-cream text-gray-900 overflow-hidden h-screen font-['Helvetica_Neue',Arial,sans-serif] dark-mode">
 <div id="app" class="flex flex-col h-screen">
 
   <!-- Navigation -->
@@ -181,8 +181,7 @@
         <button id="toggleLabels" class="text-[11px] px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-300 rounded cursor-pointer hover:bg-gray-200 transition-colors">Labels On/Off</button>
       </div>
       <div class="h-4 w-px bg-gray-300"></div>
-      <button id="darkModeToggle" class="text-[11px] px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-300 rounded cursor-pointer hover:bg-gray-200 transition-colors">Dark Mode</button>
-      <button id="tour-btn" class="text-[11px] px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-300 rounded cursor-pointer hover:bg-gray-200 transition-colors">Tour</button>
+      <button id="tour-btn" class="text-[11px] px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-300 rounded cursor-pointer hover:bg-gray-200 transition-colors">Info</button>
       <a href="about.html" class="text-[11px] text-gray-500 hover:text-accent transition-colors">About</a>
     </div>
   </nav>
@@ -207,16 +206,33 @@
   </div>
 </div>
 
-<!-- Slideshow overlay -->
-<div id="slideshow-overlay" class="fixed inset-0 z-[250] bg-black/60 backdrop-blur-sm flex items-center justify-center transition-opacity duration-400" style="display:none; opacity:0;">
-  <div class="bg-white rounded-xl shadow-2xl max-w-md w-[90%] p-8 relative">
-    <button id="slide-skip" class="absolute top-3 right-4 text-gray-400 hover:text-gray-600 text-xs transition-colors">Skip</button>
-    <h2 id="slide-title" class="text-xl font-semibold text-gray-800 mb-3"></h2>
-    <p id="slide-text" class="text-sm text-gray-600 leading-relaxed mb-6"></p>
-    <div class="flex items-center justify-between">
-      <button id="slide-prev" class="text-xs text-gray-400 hover:text-gray-600 transition-colors">&larr; Back</button>
-      <div id="slide-dots" class="flex items-center gap-1.5"></div>
-      <button id="slide-next" class="text-xs bg-red-800 text-white px-4 py-1.5 rounded-full hover:bg-red-900 transition-colors">Next</button>
+<!-- Info modal -->
+<div id="info-modal" class="fixed inset-0 z-[250] flex items-center justify-center" style="display:none; opacity:0; transition: opacity 0.4s; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);">
+  <div class="rounded-2xl max-w-lg w-[92%] relative overflow-hidden" style="background: linear-gradient(160deg, #0e1528 0%, #131d36 100%); border: 1px solid rgba(55,75,130,0.25); box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
+    <button id="info-close" class="absolute top-4 right-5 text-lg cursor-pointer" style="color: #3a4a6a; transition: color 0.15s;" onmouseover="this.style.color='#7888aa'" onmouseout="this.style.color='#3a4a6a'">&times;</button>
+    <div class="px-8 pt-8 pb-5">
+      <h1 class="text-[22px] font-bold tracking-tight" style="color: #d0d8e8;">All Objects in the Universe</h1>
+      <p class="text-[11px] mt-1.5" style="color: #4a5a80;">
+        Based on <a href="https://doi.org/10.1119/5.0150209" target="_blank" style="color: #5a7aaa; text-decoration: underline;">Lineweaver &amp; Patel</a>, <em>Am. J. Phys.</em> 91, 819&ndash;825 (2023). Licensed CC BY 4.0.
+      </p>
+    </div>
+    <div class="px-8 pb-5 space-y-3 text-[13px] leading-[1.7]" style="color: #8899aa;">
+      <p>Every known class of object, from neutrinos to the cosmic horizon, plotted on a single chart of <strong style="color: #a0b4cc;">mass versus physical radius</strong>, spanning 100 orders of magnitude in size and 120 in mass.</p>
+      <p>Two fundamental limits define the forbidden regions: general relativity's <strong style="color: #a0b4cc;">Schwarzschild radius</strong> (nothing can be smaller than its black hole size) and quantum mechanics' <strong style="color: #a0b4cc;">Compton wavelength</strong> (the smallest scale at which a particle can be localized). At their intersection sits the <strong style="color: #a0b4cc;">Planck-mass instanton</strong>, the smallest possible object.</p>
+      <p>Dashed diagonal lines trace <strong style="color: #a0b4cc;">isodensity contours</strong> through cosmic history, from the Planck epoch (10&#x2079;&#x00B3; g/cm&#x00B3;) to the present-day universe (10&#x207B;&#x00B2;&#x2079; g/cm&#x00B3;).</p>
+    </div>
+    <div class="mx-8 mb-5 py-3 rounded-lg px-4" style="background: rgba(15,20,40,0.5); border: 1px solid rgba(40,55,90,0.3);">
+      <div class="grid grid-cols-2 gap-1.5 text-[11px]" style="color: #5a6a90;">
+        <div>Scroll to zoom</div>
+        <div>Drag to pan</div>
+        <div>Hover for details</div>
+        <div>Click for Wikipedia</div>
+        <div>Press <strong style="color: #6a7a9a;">?</strong> for shortcuts</div>
+        <div>Press <strong style="color: #6a7a9a;">Tab</strong> to cycle objects</div>
+      </div>
+    </div>
+    <div class="px-8 pb-8">
+      <button id="info-start" class="w-full py-2.5 rounded-lg text-sm font-medium cursor-pointer" style="background: rgba(25,40,75,0.5); color: #7799cc; border: 1px solid rgba(55,75,120,0.35); transition: background 0.2s;" onmouseover="this.style.background='rgba(30,50,90,0.7)'" onmouseout="this.style.background='rgba(25,40,75,0.5)'">Start Exploring</button>
     </div>
   </div>
 </div>
@@ -228,7 +244,7 @@
 <script src="js/keyboard.js"></script>
 <script>
   Journal.init();
-  initSlideshow();
+  initInfoModal();
   initKeyboard();
   initDeepLinks();
 
