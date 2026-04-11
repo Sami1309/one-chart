@@ -182,18 +182,53 @@
   body.dark-mode #help-overlay .text-gray-400 { color: #5a6a90; }
   body.dark-mode #help-overlay .border-gray-100 { border-color: #1e2a50; }
   body.dark-mode #help-overlay .text-xs { color: #4a5a80; }
+
+  /* Mobile optimizations */
+  @media (max-width: 767px) {
+    #chart-container { touch-action: none; }
+    .tooltip.mobile-tooltip {
+      max-width: none !important;
+      pointer-events: auto;
+      border-radius: 12px;
+      z-index: 150;
+    }
+    .tooltip.mobile-tooltip .tt-wiki-img {
+      height: 100px !important;
+      max-width: none !important;
+    }
+    .tooltip.mobile-tooltip .tt-img-wrap {
+      padding: 0 8px !important;
+    }
+    .tooltip.mobile-tooltip.tt-layout-side {
+      display: block !important;
+      max-width: none !important;
+    }
+    .tooltip.mobile-tooltip.tt-layout-side .tt-wiki-img {
+      width: 100% !important;
+      min-height: auto !important;
+      height: 100px !important;
+      border-radius: 12px 12px 0 0 !important;
+    }
+    .legend-box { display: none !important; }
+    .hint-bar { display: none !important; }
+  }
+  #mobile-drawer { transition: transform 0.2s ease-out; }
+  #mobile-menu-btn { transition: opacity 0.2s; }
 </style>
 </head>
 <body class="bg-cream text-gray-900 overflow-hidden h-screen font-['Helvetica_Neue',Arial,sans-serif] dark-mode">
 <div id="app" class="flex flex-col h-screen">
 
   <!-- Navigation -->
-  <nav class="px-5 py-1.5 bg-white border-b border-gray-300 flex items-center justify-between flex-shrink-0 z-20">
+  <nav class="px-3 md:px-5 py-1 md:py-1.5 bg-white border-b border-gray-300 flex items-center justify-between flex-shrink-0 z-20">
     <div class="flex items-baseline gap-3">
-      <a href="index.html" class="text-[15px] font-bold text-gray-700 hover:text-accent transition-colors">All Objects and Some Questions</a>
-      <span class="text-[11px] text-gray-400">Lineweaver &amp; Patel, Am. J. Phys. 91, 819 (2023)</span>
+      <a href="index.html" class="text-[13px] md:text-[15px] font-bold text-gray-700 hover:text-accent transition-colors">
+        <span class="hidden md:inline">All Objects and Some Questions</span>
+        <span class="md:hidden">All Objects</span>
+      </a>
+      <span class="text-[11px] text-gray-400 hidden md:inline">Lineweaver &amp; Patel, Am. J. Phys. 91, 819 (2023)</span>
     </div>
-    <div class="flex items-center gap-4">
+    <div class="hidden md:flex items-center gap-4">
       <div class="flex items-center gap-2.5">
         <label class="text-[11px] text-gray-500 cursor-pointer flex items-center gap-1">X:
           <select id="xScaleCtrl" class="text-[11px] px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-300 rounded cursor-pointer">
@@ -214,6 +249,7 @@
       <button id="tour-btn" class="text-[11px] px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-300 rounded cursor-pointer hover:bg-gray-200 transition-colors">Info</button>
       <a href="about.html" class="text-[11px] text-gray-500 hover:text-accent transition-colors">About</a>
     </div>
+    <a href="about.html" class="md:hidden text-[11px] text-gray-500 hover:text-accent transition-colors">About</a>
   </nav>
 
   <!-- Chart -->
@@ -233,6 +269,59 @@
       <div class="legend-item flex items-center gap-1.5" data-legend="darkenergy"><div class="legend-swatch w-4 h-3 border border-gray-400" style="background:#ccc;"></div> &Omega;<sub>&Lambda;</sub> (dark energy)</div>
     </div>
     <div class="hint-bar absolute bottom-2 left-20 text-[10px] text-gray-400 z-10">Scroll to zoom &middot; Drag to pan &middot; Hover for info &middot; Click for Wikipedia &middot; Press <strong>?</strong> for keyboard shortcuts</div>
+  </div>
+
+  <!-- Mobile floating menu button -->
+  <button id="mobile-menu-btn" class="md:hidden fixed bottom-5 right-4 z-30 w-12 h-12 rounded-full flex items-center justify-center shadow-lg"
+          style="background: rgba(20,30,60,0.9); border: 1px solid rgba(55,75,120,0.4); color: #7799cc; font-size: 20px; backdrop-filter: blur(4px);"
+          onclick="toggleMobileDrawer()">&#9776;</button>
+
+  <!-- Mobile drawer backdrop -->
+  <div id="mobile-drawer-backdrop" class="md:hidden fixed inset-0 bg-black/40 z-[45] hidden" onclick="closeMobileDrawer()"></div>
+
+  <!-- Mobile controls drawer -->
+  <div id="mobile-drawer" class="md:hidden fixed top-0 right-0 h-full w-56 z-50 translate-x-full overflow-y-auto"
+       style="background: #0d1225; border-left: 1px solid #1a2040;">
+    <div class="p-4 pt-5 space-y-5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold" style="color: #7799cc;">Controls</h3>
+        <button onclick="closeMobileDrawer()" class="text-xl leading-none" style="color: #5a6a90;">&times;</button>
+      </div>
+      <div class="space-y-3">
+        <label class="text-xs flex items-center justify-between" style="color: #7888aa;">
+          X Axis
+          <select id="xScaleCtrlMobile" class="text-xs px-2 py-1 rounded" style="background:#151d35;color:#7888aa;border:1px solid #1e2a50;">
+            <option value="log" selected>Log</option>
+            <option value="linear">Linear</option>
+          </select>
+        </label>
+        <label class="text-xs flex items-center justify-between" style="color: #7888aa;">
+          Y Axis
+          <select id="yScaleCtrlMobile" class="text-xs px-2 py-1 rounded" style="background:#151d35;color:#7888aa;border:1px solid #1e2a50;">
+            <option value="log" selected>Log</option>
+            <option value="linear">Linear</option>
+          </select>
+        </label>
+      </div>
+      <div class="space-y-2">
+        <button id="resetZoomMobile" class="w-full text-xs px-3 py-2 rounded text-left" style="background:#151d35;color:#7888aa;border:1px solid #1e2a50;">Reset View</button>
+        <button id="toggleLabelsMobile" class="w-full text-xs px-3 py-2 rounded text-left" style="background:#151d35;color:#7888aa;border:1px solid #1e2a50;">Labels On/Off</button>
+        <button id="tourBtnMobile" class="w-full text-xs px-3 py-2 rounded text-left" style="background:#151d35;color:#7888aa;border:1px solid #1e2a50;">Info</button>
+        <a href="about.html" class="block w-full text-xs px-3 py-2 rounded text-left" style="background:#151d35;color:#7888aa;border:1px solid #1e2a50;">About</a>
+      </div>
+      <div>
+        <h3 class="text-[11px] font-bold mb-2" style="color: #7799cc;">Domination Eras</h3>
+        <div class="space-y-1.5 text-[10px]" style="color: #7888aa;">
+          <div class="legend-item-m flex items-center gap-2" data-legend="inflation"><div class="w-4 h-3 rounded-sm" style="background:#bbb;"></div> &Omega;<sub>&Lambda;<sub>i</sub></sub> (inflation)</div>
+          <div class="legend-item-m flex items-center gap-2" data-legend="radiation"><div class="w-4 h-3 rounded-sm" style="background:#d4a0a0;"></div> &Omega;<sub>r</sub> (radiation)</div>
+          <div class="legend-item-m flex items-center gap-2" data-legend="matter"><div class="w-4 h-3 rounded-sm" style="background:#a0b8d4;"></div> &Omega;<sub>m</sub> (matter)</div>
+          <div class="legend-item-m flex items-center gap-2" data-legend="darkenergy"><div class="w-4 h-3 rounded-sm" style="background:#ccc;"></div> &Omega;<sub>&Lambda;</sub> (dark energy)</div>
+        </div>
+      </div>
+      <div class="text-[10px] pt-2" style="color: #3a4a6a; border-top: 1px solid #1a2040;">
+        Pinch to zoom &middot; Drag to pan &middot; Tap for info
+      </div>
+    </div>
   </div>
 </div>
 
@@ -277,6 +366,64 @@
   initInfoModal();
   initKeyboard();
   initDeepLinks();
+
+  // Mobile drawer controls
+  function toggleMobileDrawer() {
+    var drawer = document.getElementById('mobile-drawer');
+    var backdrop = document.getElementById('mobile-drawer-backdrop');
+    if (drawer.classList.contains('translate-x-full')) {
+      drawer.classList.remove('translate-x-full');
+      backdrop.classList.remove('hidden');
+    } else {
+      closeMobileDrawer();
+    }
+  }
+  function closeMobileDrawer() {
+    document.getElementById('mobile-drawer').classList.add('translate-x-full');
+    document.getElementById('mobile-drawer-backdrop').classList.add('hidden');
+  }
+  // Make toggle available to onclick attributes
+  window.toggleMobileDrawer = toggleMobileDrawer;
+  window.closeMobileDrawer = closeMobileDrawer;
+
+  // Sync mobile controls with chart
+  var xMob = document.getElementById('xScaleCtrlMobile');
+  var yMob = document.getElementById('yScaleCtrlMobile');
+  if (xMob) {
+    xMob.onchange = function() {
+      App.xAxisFormat = this.value;
+      var desk = document.getElementById('xScaleCtrl');
+      if (desk) desk.value = this.value;
+      animateScaleTransition();
+    };
+  }
+  if (yMob) {
+    yMob.onchange = function() {
+      App.yAxisFormat = this.value;
+      var desk = document.getElementById('yScaleCtrl');
+      if (desk) desk.value = this.value;
+      animateScaleTransition();
+    };
+  }
+  var resetMob = document.getElementById('resetZoomMobile');
+  if (resetMob) resetMob.onclick = function() {
+    App.svg.transition().duration(400).call(App.zoom.transform, d3.zoomIdentity);
+    closeMobileDrawer();
+  };
+  var labelsMob = document.getElementById('toggleLabelsMobile');
+  if (labelsMob) labelsMob.onclick = function() {
+    App.showLabels = !App.showLabels;
+    var s = currentScales();
+    drawAll(s[0], s[1]);
+    closeMobileDrawer();
+  };
+  var tourMob = document.getElementById('tourBtnMobile');
+  if (tourMob) tourMob.onclick = function() {
+    closeMobileDrawer();
+    var modal = document.getElementById('info-modal');
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+  };
 
   // Preload all tooltip images so they're cached before hover
   window._preloadedImgs = Object.values(wikiData).map(function(wd) {

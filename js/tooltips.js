@@ -46,6 +46,76 @@ function addEraTooltip(el, title, desc, wiki) {
 // ============================================================
 // DETAIL PANEL
 // ============================================================
+// ============================================================
+// MOBILE TOOLTIPS
+// ============================================================
+function showMobileTooltip(obj, cx, cy) {
+  const tooltip = document.getElementById('tooltip');
+  const wd = wikiData[obj.name];
+
+  const mG = 10 ** obj.logM;
+  const rCm = 10 ** obj.logR;
+  const mSun = mG / M_sun;
+  let mStr = '10^' + obj.logM.toFixed(1) + ' g';
+  if (mSun > 0.001 && mSun < 1e20) mStr += ' \u2248 ' + mSun.toExponential(1) + ' M\u2609';
+  const rStr = '10^' + obj.logR.toFixed(1) + ' cm';
+  const rho = mG / ((4/3) * Math.PI * rCm**3);
+
+  const wikiLink = wd
+    ? '<a href="https://en.wikipedia.org/wiki/' + wd.wiki + '" target="_blank" class="tt-wiki-link" style="pointer-events:auto; display:block; margin-top:6px; color:#6688bb; font-size:12px;">View on Wikipedia \u2197</a>'
+    : '';
+
+  const textHtml = '<div class="tt-body">' +
+    '<div class="tt-title">' + obj.name + '</div>' +
+    '<div class="tt-data">Mass: ' + mStr + '<br>Radius: ' + rStr + '<br>Density: ~10^' + log10(rho).toFixed(0) + ' g/cm\u00B3</div>' +
+    '<div class="tt-desc">' + obj.desc.substring(0, 180) + (obj.desc.length > 180 ? '\u2026' : '') + '</div>' +
+    wikiLink +
+    '</div>';
+
+  tooltip.className = 'tooltip mobile-tooltip';
+  if (wd && wd.img) {
+    tooltip.classList.add('tt-layout-top');
+    tooltip.innerHTML = '<div class="tt-img-wrap"><img class="tt-wiki-img" src="' + wd.img + '" /></div>' + textHtml;
+  } else {
+    tooltip.innerHTML = textHtml;
+  }
+
+  // Position at bottom center of chart container
+  tooltip.style.left = '10px';
+  tooltip.style.right = '10px';
+  tooltip.style.bottom = '10px';
+  tooltip.style.top = 'auto';
+  tooltip.style.maxWidth = 'none';
+  tooltip.style.width = 'auto';
+  tooltip.classList.add('tt-visible');
+
+  App._selectedObj = obj;
+
+  // Highlight the tapped object
+  if (App._mobileHighlight) App._mobileHighlight.remove();
+  var col = catCol[obj.cat] || '#555';
+  App._mobileHighlight = App.chartArea.append('circle')
+    .attr('class', 'hover-ring')
+    .attr('cx', cx).attr('cy', cy)
+    .attr('stroke', obj.cat === 'blackhole' ? '#c44' : col);
+}
+
+function hideMobileTooltip() {
+  var tooltip = document.getElementById('tooltip');
+  tooltip.className = 'tooltip';
+  tooltip.style.left = '';
+  tooltip.style.right = '';
+  tooltip.style.bottom = '';
+  tooltip.style.top = '';
+  tooltip.style.maxWidth = '';
+  tooltip.style.width = '';
+  App._selectedObj = null;
+  if (App._mobileHighlight) {
+    App._mobileHighlight.remove();
+    App._mobileHighlight = null;
+  }
+}
+
 function showDetail(obj) {
   const panel = document.getElementById('detailPanel');
   const mG = 10 ** obj.logM;

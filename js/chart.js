@@ -1,19 +1,26 @@
 // ============================================================
 // GLOBAL APP STATE
 // ============================================================
+const _isMobile = window.matchMedia('(max-width: 767px)').matches;
 const App = {
   container: document.getElementById('chart-container'),
   showLabels: true,
   darkMode: true,
+  isMobile: _isMobile,
   xAxisFormat: 'log',
   yAxisFormat: 'log',
   curT: d3.zoomIdentity,
   W: 0, H: 0, width: 0, height: 0,
-  margin: {top: 48, right: 80, bottom: 52, left: 65},
+  margin: _isMobile
+    ? {top: 6, right: 6, bottom: 32, left: 40}
+    : {top: 48, right: 80, bottom: 52, left: 65},
   X_DOMAIN: [-42, 58],
   Y_DOMAIN: [-58, 68],
   _tooltipStaleAfterZoom: false,
   _mouseX: -9999, _mouseY: -9999,
+  _selectedObj: null,
+  _mobileJustTapped: false,
+  _mobileHighlight: null,
   // Filled during init
   svg: null, g: null, chartArea: null, zoom: null, bgRect: null,
   baseX: null, baseY: null,
@@ -77,49 +84,53 @@ function updateAxes(xS, yS) {
   const yAxis = axisScale(yS, yDomain, yRange);
 
   // Primary X axis (cm)
+  const _mTicks = App.isMobile ? 6 : null;
   if (App.xAxisFormat === 'linear') {
-    App.xAxisG.call(d3.axisBottom(xAxis).ticks(10).tickFormat(d => '10' + toSuperscript(Math.round(d))));
+    App.xAxisG.call(d3.axisBottom(xAxis).ticks(_mTicks || 10).tickFormat(d => '10' + toSuperscript(Math.round(d))));
   } else {
-    App.xAxisG.call(d3.axisBottom(xAxis).ticks(20).tickFormat(d => d));
+    App.xAxisG.call(d3.axisBottom(xAxis).ticks(_mTicks || 20).tickFormat(d => d));
   }
   // Primary Y axis (g)
   if (App.yAxisFormat === 'linear') {
-    App.yAxisG.call(d3.axisLeft(yAxis).ticks(10).tickFormat(d => '10' + toSuperscript(Math.round(d))));
+    App.yAxisG.call(d3.axisLeft(yAxis).ticks(_mTicks || 10).tickFormat(d => '10' + toSuperscript(Math.round(d))));
   } else {
-    App.yAxisG.call(d3.axisLeft(yAxis).ticks(20).tickFormat(d => d));
+    App.yAxisG.call(d3.axisLeft(yAxis).ticks(_mTicks || 20).tickFormat(d => d));
   }
-  // Top: Mpc
-  const mpcOffset = log10(Mpc_cm);
-  const tDomain = xDomain.map(d => +(d - mpcOffset).toFixed(1));
-  const tS = axisScale(v => xS(v + mpcOffset), tDomain, xRange);
-  if (App.xAxisFormat === 'linear') {
-    App.xAxisTopG.call(d3.axisTop(tS).ticks(10).tickFormat(d => {
-      const n = Math.round(d);
-      return n % 5 === 0 ? '10' + toSuperscript(n) : '';
-    }));
-  } else {
-    App.xAxisTopG.call(d3.axisTop(tS).ticks(15).tickFormat(d => d % 5 === 0 ? d : ''));
-  }
-  // Right: M_sun
-  const sunOffset = log10(M_sun);
-  const rDomain = yDomain.map(d => +(d - sunOffset).toFixed(1));
-  const rS = axisScale(v => yS(v + sunOffset), rDomain, yRange);
-  if (App.yAxisFormat === 'linear') {
-    App.yAxisRightG.call(d3.axisRight(rS).ticks(10).tickFormat(d => {
-      const n = Math.round(d);
-      return n % 5 === 0 ? '10' + toSuperscript(n) : '';
-    }));
-  } else {
-    App.yAxisRightG.call(d3.axisRight(rS).ticks(15).tickFormat(d => d % 5 === 0 ? d : ''));
+  // Top: Mpc & Right: M_sun (hidden on mobile)
+  if (!App.isMobile) {
+    const mpcOffset = log10(Mpc_cm);
+    const tDomain = xDomain.map(d => +(d - mpcOffset).toFixed(1));
+    const tS = axisScale(v => xS(v + mpcOffset), tDomain, xRange);
+    if (App.xAxisFormat === 'linear') {
+      App.xAxisTopG.call(d3.axisTop(tS).ticks(10).tickFormat(d => {
+        const n = Math.round(d);
+        return n % 5 === 0 ? '10' + toSuperscript(n) : '';
+      }));
+    } else {
+      App.xAxisTopG.call(d3.axisTop(tS).ticks(15).tickFormat(d => d % 5 === 0 ? d : ''));
+    }
+    const sunOffset = log10(M_sun);
+    const rDomain = yDomain.map(d => +(d - sunOffset).toFixed(1));
+    const rS = axisScale(v => yS(v + sunOffset), rDomain, yRange);
+    if (App.yAxisFormat === 'linear') {
+      App.yAxisRightG.call(d3.axisRight(rS).ticks(10).tickFormat(d => {
+        const n = Math.round(d);
+        return n % 5 === 0 ? '10' + toSuperscript(n) : '';
+      }));
+    } else {
+      App.yAxisRightG.call(d3.axisRight(rS).ticks(15).tickFormat(d => d % 5 === 0 ? d : ''));
+    }
   }
   // Update axis title labels
   const labelColor = App.darkMode ? '#7888aa' : '#444';
-  App.xLabelBottom.text(App.xAxisFormat === 'linear' ? 'physical radius [cm]' : 'log (physical radius) [cm]').attr('fill', labelColor);
-  App.xLabelTop.text(App.xAxisFormat === 'linear' ? 'radius [Mpc]' : 'log (radius) [Mpc]').attr('fill', labelColor);
-  App.yLabelLeft.text(App.yAxisFormat === 'linear' ? 'mass [g]' : 'log (mass) [g]').attr('fill', labelColor);
-  App.yLabelRight.text(App.yAxisFormat === 'linear' ? 'mass [M\u2609]' : 'log (mass) [M\u2609]').attr('fill', labelColor);
+  App.xLabelBottom.text(App.xAxisFormat === 'linear' ? 'radius [cm]' : (App.isMobile ? 'log(radius) [cm]' : 'log (physical radius) [cm]')).attr('fill', labelColor);
+  if (!App.isMobile) {
+    App.xLabelTop.text(App.xAxisFormat === 'linear' ? 'radius [Mpc]' : 'log (radius) [Mpc]').attr('fill', labelColor);
+    App.yLabelRight.text(App.yAxisFormat === 'linear' ? 'mass [M\u2609]' : 'log (mass) [M\u2609]').attr('fill', labelColor);
+  }
+  App.yLabelLeft.text(App.yAxisFormat === 'linear' ? 'mass [g]' : (App.isMobile ? 'log(mass) [g]' : 'log (mass) [g]')).attr('fill', labelColor);
 
-  App.g.selectAll('.tick text').attr('fill', App.darkMode ? '#5a6a90' : '#555').style('font-size','9px');
+  App.g.selectAll('.tick text').attr('fill', App.darkMode ? '#5a6a90' : '#555').style('font-size', App.isMobile ? '7px' : '9px');
   App.g.selectAll('.tick line').attr('stroke', App.darkMode ? '#1e2a50' : '#ccc');
   App.g.selectAll('.domain').attr('stroke', App.darkMode ? '#2a3660' : '#999');
 }
@@ -585,6 +596,7 @@ function drawObjects(xS, yS) {
     }
 
     gr.on('mouseover', function(event) {
+      if (App.isMobile) return;
       App._tooltipStaleAfterZoom = false;
       const mG = 10 ** obj.logM;
       const rCm = 10 ** obj.logR;
@@ -630,13 +642,24 @@ function drawObjects(xS, yS) {
 
       d3.select(this).select('circle').attr('r', r + 3).attr('stroke-width', 3).attr('filter','url(#glow)');
     })
-    .on('mousemove', function(event) { positionTooltip(event); })
+    .on('mousemove', function(event) { if (!App.isMobile) positionTooltip(event); })
     .on('mouseout', function() {
+      if (App.isMobile) return;
       tooltip.node().className = 'tooltip';
       d3.select(this).selectAll('.hover-ring').remove();
       d3.select(this).select('circle').attr('r', r).attr('stroke-width', isPlanck ? 2.5 : (isBH && dk ? 2 : 1.5)).attr('filter', null);
     })
     .on('click', function() {
+      if (App.isMobile) {
+        if (App._selectedObj === obj) {
+          var wd2 = wikiData[obj.name];
+          if (wd2) window.open('https://en.wikipedia.org/wiki/' + wd2.wiki, '_blank');
+        } else {
+          showMobileTooltip(obj, cx, cy);
+        }
+        App._mobileJustTapped = true;
+        return;
+      }
       const wd = wikiData[obj.name];
       if (wd) window.open(`https://en.wikipedia.org/wiki/${wd.wiki}`, '_blank');
     });
@@ -650,6 +673,16 @@ function drawObjects(xS, yS) {
 // PROXIMITY-BASED LABEL VISIBILITY
 // ============================================================
 function applyLabelProximity() {
+  if (App.isMobile) {
+    // On mobile, show labels based on zoom level only (no cursor proximity)
+    App.chartArea.selectAll('.prox-label').each(function(d) {
+      if (!d) return;
+      d3.select(this).style('opacity', d.bo);
+    });
+    App.chartArea.selectAll('.energy-prox-label').style('opacity', 0.7);
+    App.chartArea.selectAll('.epoch-prox-label').style('opacity', 0.7);
+    return;
+  }
   const mx = App._mouseX, my = App._mouseY;
 
   App.chartArea.selectAll('.prox-label').each(function(d) {
@@ -846,23 +879,28 @@ function initChart() {
   // Axis groups
   App.xAxisG = App.g.append('g').attr('transform', `translate(0,${App.height})`);
   App.yAxisG = App.g.append('g');
-  App.xAxisTopG = App.g.append('g');
-  App.yAxisRightG = App.g.append('g').attr('transform', `translate(${App.width},0)`);
+  App.xAxisTopG = App.g.append('g').style('display', App.isMobile ? 'none' : null);
+  App.yAxisRightG = App.g.append('g').attr('transform', `translate(${App.width},0)`)
+    .style('display', App.isMobile ? 'none' : null);
 
   // Axis labels
-  App.xLabelBottom = App.g.append('text').attr('x', App.width/2).attr('y', App.height+42)
-    .attr('text-anchor','middle').attr('fill','#444').style('font-size','12px')
+  const _lfs = App.isMobile ? '9px' : '12px';
+  App.xLabelBottom = App.g.append('text').attr('x', App.width/2)
+    .attr('y', App.height + (App.isMobile ? 24 : 42))
+    .attr('text-anchor','middle').attr('fill','#444').style('font-size', _lfs)
     .text('log (physical radius) [cm]');
   App.xLabelTop = App.g.append('text').attr('x', App.width/2).attr('y', -35)
-    .attr('text-anchor','middle').attr('fill','#444').style('font-size','12px')
+    .attr('text-anchor','middle').attr('fill','#444').style('font-size', _lfs)
+    .style('display', App.isMobile ? 'none' : null)
     .text('log (radius) [Mpc]');
   App.yLabelLeft = App.g.append('text').attr('transform','rotate(-90)')
-    .attr('x', -App.height/2).attr('y', -48)
-    .attr('text-anchor','middle').attr('fill','#444').style('font-size','12px')
+    .attr('x', -App.height/2).attr('y', App.isMobile ? -26 : -48)
+    .attr('text-anchor','middle').attr('fill','#444').style('font-size', _lfs)
     .text('log (mass) [g]');
   App.yLabelRight = App.g.append('text').attr('transform','rotate(90)')
     .attr('x', App.height/2).attr('y', -App.width-55)
-    .attr('text-anchor','middle').attr('fill','#444').style('font-size','12px')
+    .attr('text-anchor','middle').attr('fill','#444').style('font-size', _lfs)
+    .style('display', App.isMobile ? 'none' : null)
     .text('log (mass) [M\u2609]');
 
   App.baseX = makeX();
@@ -880,13 +918,91 @@ function initChart() {
       updateAxes(xS, yS);
       drawAll(xS, yS);
       // After redraw, old hover targets are gone so mouseout never fires.
-      // Mark tooltip as stale so the next mousemove dismisses it.
       if (document.getElementById('tooltip').classList.contains('tt-visible')) {
-        App._tooltipStaleAfterZoom = true;
+        if (App.isMobile) {
+          hideMobileTooltip();
+        } else {
+          App._tooltipStaleAfterZoom = true;
+        }
       }
     });
 
   App.svg.call(App.zoom);
+
+  // Mobile: touch/pointer handling for pan and pinch-zoom
+  if (App.isMobile) {
+    App.svg.style('touch-action', 'none');
+
+    // D3 zoom v7 uses touch events, but some environments (Chrome DevTools,
+    // some browsers) only fire pointer events. Add a custom pointer-event
+    // handler that directly drives the D3 zoom transform for reliability.
+    // Disable D3 zoom's built-in touch listeners to avoid double-handling.
+    App.svg
+      .on('touchstart.zoom', null)
+      .on('touchmove.zoom', null)
+      .on('touchend.zoom touchcancel.zoom', null);
+
+    var _ptrs = new Map();
+    var _lastPinchDist = 0;
+    var svgNode = App.svg.node();
+
+    svgNode.addEventListener('pointerdown', function(e) {
+      if (e.pointerType === 'mouse') return; // let D3 zoom handle mouse
+      _ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
+      svgNode.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    }, {passive: false});
+
+    svgNode.addEventListener('pointermove', function(e) {
+      if (!_ptrs.has(e.pointerId)) return;
+      var prev = _ptrs.get(e.pointerId);
+      _ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
+
+      if (_ptrs.size === 1) {
+        // Single finger: pan
+        var dx = e.clientX - prev.x;
+        var dy = e.clientY - prev.y;
+        var t = App.curT;
+        var newT = d3.zoomIdentity.translate(t.x + dx, t.y + dy).scale(t.k);
+        App.svg.call(App.zoom.transform, newT);
+      } else if (_ptrs.size === 2) {
+        // Two fingers: pinch zoom
+        var pts = Array.from(_ptrs.values());
+        var dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+        if (_lastPinchDist > 0 && dist > 0) {
+          var scale = dist / _lastPinchDist;
+          var cx = (pts[0].x + pts[1].x) / 2 - App.margin.left;
+          var cy = (pts[0].y + pts[1].y) / 2 - App.margin.top;
+          var t = App.curT;
+          var newK = t.k * scale;
+          var newT = d3.zoomIdentity
+            .translate(cx - (cx - t.x) * scale, cy - (cy - t.y) * scale)
+            .scale(newK);
+          App.svg.call(App.zoom.transform, newT);
+        }
+        _lastPinchDist = dist;
+      }
+      e.preventDefault();
+    }, {passive: false});
+
+    svgNode.addEventListener('pointerup', function(e) {
+      _ptrs.delete(e.pointerId);
+      if (_ptrs.size < 2) _lastPinchDist = 0;
+    });
+    svgNode.addEventListener('pointercancel', function(e) {
+      _ptrs.delete(e.pointerId);
+      if (_ptrs.size < 2) _lastPinchDist = 0;
+    });
+
+    // Tap-to-dismiss mobile tooltip
+    App.svg.on('click.mobileDismiss', function() {
+      if (App._mobileJustTapped) {
+        App._mobileJustTapped = false;
+        return;
+      }
+      hideMobileTooltip();
+    });
+  }
 
   // Dismiss stale tooltip after zoom when cursor moves
   App.container.addEventListener('mousemove', function() {
@@ -939,12 +1055,24 @@ function initChart() {
 
   // Resize
   window.addEventListener('resize', () => {
+    App.isMobile = window.matchMedia('(max-width: 767px)').matches;
+    App.margin = App.isMobile
+      ? {top: 6, right: 6, bottom: 32, left: 40}
+      : {top: 48, right: 80, bottom: 52, left: 65};
     getDims();
     App.svg.attr('width', App.W).attr('height', App.H);
+    App.g.attr('transform', `translate(${App.margin.left},${App.margin.top})`);
     d3.select('#clip rect').attr('width', App.width).attr('height', App.height);
     App.bgRect.attr('width', App.width).attr('height', App.height);
     App.xAxisG.attr('transform', `translate(0,${App.height})`);
     App.yAxisRightG.attr('transform', `translate(${App.width},0)`);
+    App.xAxisTopG.style('display', App.isMobile ? 'none' : null);
+    App.yAxisRightG.style('display', App.isMobile ? 'none' : null);
+    const lfs = App.isMobile ? '9px' : '12px';
+    App.xLabelBottom.attr('x', App.width/2).attr('y', App.height + (App.isMobile ? 24 : 42)).style('font-size', lfs);
+    App.xLabelTop.attr('x', App.width/2).style('display', App.isMobile ? 'none' : null).style('font-size', lfs);
+    App.yLabelLeft.attr('x', -App.height/2).attr('y', App.isMobile ? -26 : -48).style('font-size', lfs);
+    App.yLabelRight.attr('x', App.height/2).attr('y', -App.width - 55).style('display', App.isMobile ? 'none' : null).style('font-size', lfs);
     App.baseX = makeX(); App.baseY = makeY();
     const [xS, yS] = currentScales();
     updateAxes(xS, yS);
